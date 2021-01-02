@@ -1,6 +1,7 @@
 import { BaseExchange } from "./BaseExchange";
 import { ExchangeType } from "../Enums/ExchangeType";
 import { OrderBookEntity } from "../Types/OrderBookEntity";
+import { OrderBookSide } from "../Types/OrderBookSide";
 
 export class Bybit extends BaseExchange {
   constructor() {
@@ -88,26 +89,42 @@ export class Bybit extends BaseExchange {
     const Sell: any[] = [];
     const Buy: any[] = [];
 
-    //{price: Number, size: Number, side: String, id: string}
-    //console.log(data);
-    //this.orderbook[0].size
     if (data.data.delete) {
-      //console.log("NIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\nNIGEr\n");
-      data.data.delete.forEach((element: any) => {});
-    } else {
-      console.log("got orderbook boi\n");
-      //console.log(data);
-      data.data.forEach((element: any) => {
-        const FORMATTED = {
-          ...element,
-          price: Number(element.price),
-        };
-        if (element.side == "Buy") Buy.push(FORMATTED);
-        else Sell.push(FORMATTED);
+      data.data.delete.forEach((delete_element: any) => {
+        const { side } = delete_element;
+        const idx = this.orderbook[side == "Buy" ? "BUY" : "SELL"]?.findIndex(
+           (el: any) =>
+             el.id == delete_element.id || el.price == delete_element.price
+        ) as number;
+        this.orderbook[side=="Buy" ? "BUY" : "SELL"]?[idx].id = delete_element.id;
+        this.orderbook[side=="Buy" ? "BUY" : "SELL"]?[idx].size = 0;
+        });
+      data.data.update.forEach((update_element: any) => {
+        var side = update_element.side;
+        var idx = this.orderbook[side == "Buy" ? "BUY" : "SELL"]?.findIndex(
+           (el: any) =>
+             el.id == update_element.id || el.price == update_element.price
+        );
+        const old = this.orderbook[side=="Buy" ? "BUY" : "SELL"]?.find((el,index) => index===idx)
+        const newO: OrderBookEntity =  {
+          id:'',
+          startPrice:0,
+          endPrice:0,
+          size:0
+
+        }
+        this.orderbook[side=="Buy" ? "BUY" : "SELL"]?[idx] = newO;
       });
-      this.aggregateOrderBook({ bids: Sell, asks: Buy }, 10);
-      //this.printBook(true);
+
+    } else {
+      data.data.forEach((element: any) => {
+        const FORMATTED = {id: element.id, startPrice:Number(element.price), endPrice: 0, size: element.size}
+        if (element.side == "Buy") this.orderbook.BUY?.push(FORMATTED);
+        else this.orderbook.SELL?.push(FORMATTED);
+      });
+      //this.aggregateOrderBook({ bids: Sell, asks: Buy }, 10);
     }
+    //this.printBook(true);
     return [];
   }
 

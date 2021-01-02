@@ -1,6 +1,6 @@
-import { OrderBookEntity } from "./OrderBookEntity";
+import { OrderBookSide } from "./OrderBookSide";
 
 export type OrderBook = {
-  SELL?: Array<OrderBookEntity>;
-  BUY?: Array<OrderBookEntity>;
+  SELL?: OrderBookSide;
+  BUY?: OrderBookSide;
 };

@@ -1,6 +1,6 @@
 export type OrderBookEntity = {
+  id: string,
   startPrice: number;
   endPrice: number;
   size: number;
-  sizes: Array<number>
 };

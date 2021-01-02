@@ -34,7 +34,7 @@ export class Binance extends BaseExchange {
       size: message.q,
       ticker: message.s,
     };
-    // this.addTransaction(trade);
+    this.addTransaction(trade);
     console.log(trade);
   }
 }
