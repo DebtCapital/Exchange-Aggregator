@@ -42,7 +42,7 @@ export class Bybit extends BaseExchange {
         const after  = Object.values(this.futs).join("")
         if(after != before ){
           // NIGGA IT CHANGED AAAAAAAAAAAAAAAAAAA
-          console.log(this.futs)
+          this.logger.log(this.futs, "FUTS")
         }
       });
       //console.log(this.futs)
@@ -57,7 +57,7 @@ export class Bybit extends BaseExchange {
       var side = element.tick_direction.replace("Zero", "")
 
       var trade:TradeEntity = {size: element.size, timestamp: element.trade_time_ms, ticker:data.topic.replace("trade.", ""),price: element.price }
-      this.logger.log(JSON.stringify(trade,null,4),"Trade")
+      this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
     });
 
 
@@ -116,8 +116,8 @@ export class Bybit extends BaseExchange {
       
       //JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
       //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.${ticker}`] })
-      //JSON.stringify({ op: "subscribe", args: [`trade.${ticker}`] })
-      JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
+      JSON.stringify({ op: "subscribe", args: [`trade.${ticker}`] })
+      // JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
     );
   }
   public onMessage(data: any) {
