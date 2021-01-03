@@ -9,7 +9,11 @@ export class Bybit extends BaseExchange {
   private last_open = 0;
   private last_dat = {};
   constructor() {
-    super(ExchangeType.WebSocket, "wss://stream.bybit.com/realtime", false);
+    super(ExchangeType.WebSocket, "wss://stream.bybit.com/realtime", true);
+  }
+
+  tradeHandler(data: any){
+
   }
 
   tickManager(data:any, vol: number){
@@ -19,38 +23,42 @@ export class Bybit extends BaseExchange {
     //console.log("tick: ", nig)
   }
   ohlcvManager(data:any){
-    console.log(data)
+    //console.log(data)
     var nig: OHLCVEntity = {Open: data.open, High: data.high, Low: data.low, Close: data.close, Volume: data.volume, Timestamp:data.start}
 
      // do whatever you like with the ticks
   }
 
-  private KlineV2Handler(data:any){
-    if(this.tick){
-      //console.log("price changed by: ",data.data[0].close - this.nig)
+  private KlineV2Handler(data:any) {
+    data.data.forEach((element: any) => {
 
-      // all of this is needed to get volume PER TICK
-      var volume = 0
-      if(this.last_open != data.data[0].open){
-        this.last_vol = data.data[0].volume
-        volume = this.last_vol
-      }
-      else{
-        volume = data.data[0].volume-this.last_vol
-        this.last_vol = data.data[0].volume
-      }
-      this.last_open = data.data[0].open
-      this.tickManager(data.data[0], volume)
-    }else{
+      
+      if(this.tick){
+        //console.log("price changed by: ",element.close - this.nig)
 
-      if(this.last_open != data.data[0].open){
-        this.ohlcvManager(data.data)
+        // all of this is needed to get volume PER TICK
+        var volume = 0
+        if(this.last_open != element.open){
+          this.last_vol = element.volume
+          volume = this.last_vol
+        }
+        else{
+          volume = element.volume-this.last_vol
+          this.last_vol = element.volume
+        }
+        this.last_open = element.open
+        this.tickManager(element, volume)
+      }else{
+
+        if(this.last_open != element.open){
+          this.ohlcvManager(data.data)
+        }
+        this.last_open = element.open
       }
-      this.last_open = data.data[0].open
-    }
-    
-    this.nig = data.data[0].close;
-    this.last_dat = data.data
+      
+      this.nig = element.close;
+      this.last_dat = data.data
+    });
   }
 
   public onConnected() {
@@ -60,6 +68,7 @@ export class Bybit extends BaseExchange {
       
       //JSON.stringify({ op: "subscribe", args: ["orderBook_200.100ms.BTCUSD"] })
       JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.BTCUSD`] })
+      //JSON.stringify({ op: "subscribe", args: [`trade.BTCUSD`] })
     );
   }
   public onMessage(data: any) {
@@ -78,6 +87,7 @@ export class Bybit extends BaseExchange {
 
       // Get Live trades, useful for tick charts
       case "trade.BTCUSD": {
+        this.tradeHandler(data);
         break;
       }
 
