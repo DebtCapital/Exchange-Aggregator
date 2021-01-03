@@ -6,7 +6,7 @@ import axios from "axios";
 
 export class Binance extends BaseExchange {
   constructor() {
-    super(ExchangeType.WebSocket, "wss://stream.binance.com:9443/ws/stream", true);
+    super(ExchangeType.WebSocket, "wss://stream.binance.com:9443/ws/stream", false);
   }
   subscribe(streams: Array<string>) {
     const message = {
@@ -34,8 +34,8 @@ export class Binance extends BaseExchange {
       price: message.p,
       size: message.q,
       ticker: message.s,
+      timestamp: 0
     };
     this.addTransaction(trade);
-    console.log(trade);
   }
 }

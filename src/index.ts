@@ -1,9 +1,8 @@
 import { Binance } from "./Modules/Exchanges/Binance";
 import { Bitfinex } from "./Modules/Exchanges/Bitfinex";
 import { Bybit } from "./Modules/Exchanges/Bybit";
-import { WebSocketServer } from "./Modules/Server/WebSocketServer";
-
-//new Binance();
-//const test = new Bybit();
-const bfx = new Bitfinex();
-const server = new WebSocketServer();
+import { Server } from "./Modules/Server";
+// Gotta assign this mfer or it wont init ????
+const WebSocketServer = Server;
+new Binance();
+const test = new Bybit();
