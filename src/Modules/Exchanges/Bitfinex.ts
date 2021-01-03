@@ -38,16 +38,17 @@ export class Bitfinex extends BaseExchange {
           if((message[1].includes("te")|| message[1].includes("tu"))){
             //update
             var trade:TradeEntity = {size:message[2][2], timestamp: message[2][1], price: message[2][3], ticker: this.channelToTicker[message[0]][1]}   
-            this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
+            //this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
+            this.addTransaction(trade);
           }
     
           else{
-            //console.log(message[1])
+            console.log(message)
             message[1].forEach((element: any) => {
               // new trade
               var trade:TradeEntity = {size:element[2], timestamp: element[1], price: element[3], ticker: this.channelToTicker[message[0]][1]}
               
-              this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
+              this.addTransaction(trade);
               
             });
           }

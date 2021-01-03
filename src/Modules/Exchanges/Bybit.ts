@@ -60,7 +60,8 @@ export class Bybit extends BaseExchange {
       var side = element.tick_direction.replace("Zero", "")
 
       var trade:TradeEntity = {size: element.size, timestamp: element.trade_time_ms, ticker,price: element.price }
-      this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
+      //this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
+      this.addTransaction(trade);
     });
 
 
@@ -118,9 +119,9 @@ export class Bybit extends BaseExchange {
     //await this.historicalKline(Math.floor((Number(new Date())) /1000 )-(200*60) , ticker, interval)
     this.send(
       
-      JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
+      //JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
       //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.${ticker}`] })
-      //JSON.stringify({ op: "subscribe", args: [`trade.${ticker}`] })
+      JSON.stringify({ op: "subscribe", args: [`trade.${ticker}`] })
       // JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
     );
   }
