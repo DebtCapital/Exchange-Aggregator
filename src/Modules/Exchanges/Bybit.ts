@@ -9,6 +9,7 @@ export class Bybit extends BaseExchange {
   private last_vol= 0;
   private last_open = 0;
   private last_dat = {};
+  private futs:any = {};
   constructor() {
     super(ExchangeType.WebSocket, "wss://stream.bybit.com/realtime", true);
   }
@@ -21,7 +22,35 @@ export class Bybit extends BaseExchange {
   
   */
 
-  tradeHandler(data: any){
+  private instrumentInfoHandler(data: any){
+    // oi, funding, predicted funding, funding time, countdown to funding
+    // first message
+    if(data.data.funding_rate_e6){
+      this.futs = {"funding": data.data.funding_rate_e6, "predicted_funding": data.data.predicted_funding_rate_e6, "next_funding_time": data.data.next_funding_time, "open_interest": data.data.open_interest, "countdown_hour": data.data.countdown_hour}
+      console.log(this.futs)
+    }
+    //updates
+    else{
+      //console.log(data.data)
+      data.data.update.forEach((element: any) => {
+        const before  = Object.values(this.futs).join("")
+        if(element.funding_rate_e6) this.futs.funding = element.funding_rate_e6;
+        if(element.countdown_hour) this.futs.countdown_hour = element.countdown_hour;
+        if(element.predicted_funding_rate_e6) this.futs.predicted_funding = element.predicted_funding_rate_e6;
+        if(element.next_funding_time) this.futs.next_funding_time = element.next_funding_time;
+        if(element.open_interest) this.futs.open_interest = element.open_interest;
+        const after  = Object.values(this.futs).join("")
+        if(after != before ){
+          // NIGGA IT CHANGED AAAAAAAAAAAAAAAAAAA
+          console.log(this.futs)
+        }
+      });
+      //console.log(this.futs)
+    }
+  }
+
+
+  private tradeHandler(data: any){
     //console.clear()
     //console.log(data)
     data.data.forEach((element:any) => {
@@ -34,13 +63,13 @@ export class Bybit extends BaseExchange {
 
   }
 
-  tickManager(data:any, vol: number){
+  private tickManager(data:any, vol: number){
     
     var nig: OHLCVEntity = {Open: data.open, High: data.high, Low: data.low, Close: data.close, Volume: vol, Timestamp:data.timestamp}
     // do whatever you like with the ticks
     //console.log("tick: ", nig)
   }
-  ohlcvManager(data:any){
+  private ohlcvManager(data:any){
     //console.log(data)
     var nig: OHLCVEntity = {Open: data.open, High: data.high, Low: data.low, Close: data.close, Volume: data.volume, Timestamp:data.start}
 
@@ -81,12 +110,14 @@ export class Bybit extends BaseExchange {
 
   public onConnected() {
     // https://bybit-exchange.github.io/docs/inverse/#t-websocketorderbook200
-    var interval = 1
+    const  interval = 1
+    const ticker = 'BTCUSD'
     this.send(
       
-      //JSON.stringify({ op: "subscribe", args: ["orderBook_200.100ms.BTCUSD"] })
-      //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.BTCUSD`] })
-      JSON.stringify({ op: "subscribe", args: [`trade.BTCUSD`] })
+      //JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
+      //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.${ticker}`] })
+      //JSON.stringify({ op: "subscribe", args: [`trade.${ticker}`] })
+      JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
     );
   }
   public onMessage(data: any) {
@@ -111,6 +142,7 @@ export class Bybit extends BaseExchange {
 
       // idk yet, might be important for tick charts not sure
       case "instrument_info.100ms.BTCUSD": {
+        this.instrumentInfoHandler(data);
         break;
       }
       // live chart data, timeframes: 1, 3, 5, 15, 30,
