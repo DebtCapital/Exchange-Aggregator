@@ -3,6 +3,7 @@ import { ExchangeType } from "../Enums/ExchangeType";
 import { OrderBookEntity } from "../Types/OrderBookEntity";
 import { OrderBookSide } from "../Types/OrderBookSide";
 import {OHLCVEntity} from "../Types/OHLCVEntity"
+import {TradeEntity} from "../Types/TradeEntity"
 export class Bybit extends BaseExchange {
   private nig =0;
   private last_vol= 0;
@@ -11,8 +12,25 @@ export class Bybit extends BaseExchange {
   constructor() {
     super(ExchangeType.WebSocket, "wss://stream.bybit.com/realtime", true);
   }
+  /*
+  export type TradeEntity = {
+    ticker: string;
+    size: number;
+    price: number;
+  };
+  
+  */
 
   tradeHandler(data: any){
+    //console.clear()
+    //console.log(data)
+    data.data.forEach((element:any) => {
+      var side = element.tick_direction.replace("Zero", "")
+
+      var trade:TradeEntity = {size: element.size, timestamp: element.trade_time_ms, ticker:data.topic.replace("trade.", ""),price: element.price }
+      console.log("trade:", trade)
+    });
+
 
   }
 
@@ -67,8 +85,8 @@ export class Bybit extends BaseExchange {
     this.send(
       
       //JSON.stringify({ op: "subscribe", args: ["orderBook_200.100ms.BTCUSD"] })
-      JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.BTCUSD`] })
-      //JSON.stringify({ op: "subscribe", args: [`trade.BTCUSD`] })
+      //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.BTCUSD`] })
+      JSON.stringify({ op: "subscribe", args: [`trade.BTCUSD`] })
     );
   }
   public onMessage(data: any) {
