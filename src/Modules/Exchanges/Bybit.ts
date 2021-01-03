@@ -2,16 +2,64 @@ import { BaseExchange } from "./BaseExchange";
 import { ExchangeType } from "../Enums/ExchangeType";
 import { OrderBookEntity } from "../Types/OrderBookEntity";
 import { OrderBookSide } from "../Types/OrderBookSide";
-
+import {OHLCVEntity} from "../Types/OHLCVEntity"
 export class Bybit extends BaseExchange {
+  private nig =0;
+  private last_vol= 0;
+  private last_open = 0;
+  private last_dat = {};
   constructor() {
-    super(ExchangeType.WebSocket, "wss://stream.bybit.com/realtime");
+    super(ExchangeType.WebSocket, "wss://stream.bybit.com/realtime", false);
+  }
+
+  tickManager(data:any, vol: number){
+    
+    var nig: OHLCVEntity = {Open: data.open, High: data.high, Low: data.low, Close: data.close, Volume: vol, Timestamp:data.timestamp}
+    // do whatever you like with the ticks
+    //console.log("tick: ", nig)
+  }
+  ohlcvManager(data:any){
+    console.log(data)
+    var nig: OHLCVEntity = {Open: data.open, High: data.high, Low: data.low, Close: data.close, Volume: data.volume, Timestamp:data.start}
+
+     // do whatever you like with the ticks
+  }
+
+  private KlineV2Handler(data:any){
+    if(this.tick){
+      //console.log("price changed by: ",data.data[0].close - this.nig)
+
+      // all of this is needed to get volume PER TICK
+      var volume = 0
+      if(this.last_open != data.data[0].open){
+        this.last_vol = data.data[0].volume
+        volume = this.last_vol
+      }
+      else{
+        volume = data.data[0].volume-this.last_vol
+        this.last_vol = data.data[0].volume
+      }
+      this.last_open = data.data[0].open
+      this.tickManager(data.data[0], volume)
+    }else{
+
+      if(this.last_open != data.data[0].open){
+        this.ohlcvManager(data.data)
+      }
+      this.last_open = data.data[0].open
+    }
+    
+    this.nig = data.data[0].close;
+    this.last_dat = data.data
   }
 
   public onConnected() {
     // https://bybit-exchange.github.io/docs/inverse/#t-websocketorderbook200
+    var interval = 1
     this.send(
-      JSON.stringify({ op: "subscribe", args: ["orderBook_200.100ms.BTCUSD"] })
+      
+      //JSON.stringify({ op: "subscribe", args: ["orderBook_200.100ms.BTCUSD"] })
+      JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.BTCUSD`] })
     );
   }
   public onMessage(data: any) {
@@ -40,6 +88,7 @@ export class Bybit extends BaseExchange {
       // live chart data, timeframes: 1, 3, 5, 15, 30,
       //                    60, 120, 240, 360, D, W, M
       case "klineV2.1.BTCUSD": {
+        this.KlineV2Handler(data);
         break;
       }
 
@@ -91,36 +140,69 @@ export class Bybit extends BaseExchange {
 
     if (data.data.delete) {
       data.data.delete.forEach((delete_element: any) => {
-        const { side } = delete_element;
-        const idx = this.orderbook[side == "Buy" ? "BUY" : "SELL"]?.findIndex(
-           (el: any) =>
-             el.id == delete_element.id || el.price == delete_element.price
-        ) as number;
-        this.orderbook[side=="Buy" ? "BUY" : "SELL"]?[idx].id = delete_element.id;
-        this.orderbook[side=="Buy" ? "BUY" : "SELL"]?[idx].size = 0;
-        });
+
+        var idx = this.orderbook[delete_element.side == "Buy" ? "BUY" : "SELL"].findIndex(
+          (orderbookElement: OrderBookEntity) =>  orderbookElement.startPrice==delete_element.price|| orderbookElement.id==delete_element.id);
+
+
+        if (idx == -1){
+          console.log(`DUMB NIGGER ALERT DUMB NIGGER ALERT ${Math.random()}`)
+        }
+        else{
+          console.log(idx, this.orderbook[delete_element.side ? "BUY" : "SELL"].length, delete_element.side)
+          this.orderbook[delete_element.side == "Buy" ? "BUY" : "SELL"][idx].id = delete_element.id
+          this.orderbook[delete_element.side == "Buy" ? "BUY" : "SELL"][idx].size = 0
+          //this.printBook(true);
+        }
+      });
+      data.data.insert.forEach((insert_element: any) => {
+        //console.log("INSERT")
+        var idx = this.orderbook[insert_element.side == "Buy" ? "BUY" : "SELL"].findIndex(
+          (orderbookElement: OrderBookEntity) =>  orderbookElement.startPrice==insert_element.price|| orderbookElement.id==insert_element.id);
+        if (idx == -1){
+          
+          //console.log(delete_element)
+          //console.log(this.orderbook)
+          //console.log(`DUMB INSERT ALERT DUMB INSERT ALERT ${Math.random()}`)
+          this.orderbook[insert_element.side == "Buy" ? "BUY" : "SELL"].push({startPrice: insert_element.price, endPrice: 0,  size: insert_element.size, id: insert_element.id})
+          //this.printBook(true);
+        }
+        else{
+          this.orderbook[insert_element.side == "Buy" ? "BUY" : "SELL"][idx].id = insert_element.id
+          this.orderbook[insert_element.side == "Buy" ? "BUY" : "SELL"][idx].size = Number(insert_element.price)
+          //this.printBook(true);
+        }
+
+      });
       data.data.update.forEach((update_element: any) => {
-        var side = update_element.side;
-        var idx = this.orderbook[side == "Buy" ? "BUY" : "SELL"]?.findIndex(
-           (el: any) =>
-             el.id == update_element.id || el.price == update_element.price
-        );
-        const old = this.orderbook[side=="Buy" ? "BUY" : "SELL"]?.find((el,index) => index===idx)
-        const newO: OrderBookEntity =  {
-          id:'',
-          startPrice:0,
-          endPrice:0,
-          size:0
+        var idx = this.orderbook[update_element.side == "Buy" ? "BUY" : "SELL"].findIndex(
+          (orderbookElement: OrderBookEntity) =>  orderbookElement.startPrice==update_element.price|| orderbookElement.id==update_element.id);
+        if (idx == -1){
+          
+          console.log(`DUMB UPDATE ALERT DUMB UPDATE ALERT ${Math.random()}`)
+        }
+        else{
+          this.orderbook[update_element.side == "Buy" ? "BUY" : "SELL"][idx].id = update_element.id
+          this.orderbook[update_element.side == "Buy" ? "BUY" : "SELL"][idx].size = Number(update_element.price)
+          //this.printBook(true);
 
         }
-        this.orderbook[side=="Buy" ? "BUY" : "SELL"]?[idx] = newO;
+        
       });
 
     } else {
       data.data.forEach((element: any) => {
-        const FORMATTED = {id: element.id, startPrice:Number(element.price), endPrice: 0, size: element.size}
-        if (element.side == "Buy") this.orderbook.BUY?.push(FORMATTED);
-        else this.orderbook.SELL?.push(FORMATTED);
+        const FORMATTED = {
+          id: element.id,
+          startPrice: Number(element.price),
+          endPrice: 0,
+          size: element.size,
+        };
+        if (element.side == "Buy") {
+          this.orderbook.BUY.push(FORMATTED);
+        } else {
+          this.orderbook.SELL.push(FORMATTED);
+        }
       });
       //this.aggregateOrderBook({ bids: Sell, asks: Buy }, 10);
     }
@@ -129,26 +211,15 @@ export class Bybit extends BaseExchange {
   }
 
   printBook(buy: boolean) {
-    if (buy) {
-      this.orderbook.BUY?.forEach((element: any) => {
-        console.log(
-          "%s %.2f %d",
-          "\x1b[32m",
-          element["startPrice"],
-          element["endPrice"],
-          element["size"]
-        );
-      });
-    } else {
-      this.orderbook.SELL?.forEach((element: any) => {
-        console.log(
-          "%s %.2f %d",
-          "\x1b[31m",
-          element["startPrice"],
-          element["endPrice"],
-          element["size"]
-        );
-      });
+    console.clear();
+
+    var nigs = []
+    const books = this.aggregateOrderBook({asks: this.orderbook.BUY, bids: this.orderbook.SELL}, 10);
+    for(let i = 0; i < Math.max(books.buy.length, books.sell.length); i++){
+      const str1 = i < books.buy.length? `${books.buy[i].startPrice} ${books.buy[i].endPrice} ${books.buy[i].size}`: "          ";
+      const str2 = i < books.sell.length? `${books.sell[i].startPrice} ${books.sell[i].endPrice} ${books.sell[i].size}` : "";
+      console.log("\x1b[32m"+str1, "\x1b[31m"+str2, '\x1b[0m');
     }
+
   }
 }

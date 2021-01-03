@@ -5,6 +5,7 @@ import { OHLCVEntity } from "../Types/OHLCVEntity";
 import { TradeEntity } from "../Types/TradeEntity";
 import { OrderBookSide } from "../Types/OrderBookSide";
 import consola from "consola";
+import { OrderBookEntity } from "../Types/OrderBookEntity";
 export abstract class BaseExchange {
   // orderbooks
   // ohlc[v]
@@ -17,9 +18,9 @@ export abstract class BaseExchange {
   public orderbook: OrderBook = { SELL: [], BUY: [] };
   public ohlcv: Array<OHLCVEntity> = [];
   public trades: Array<TradeEntity> = [];
-
-  constructor(private type: ExchangeType, private url: string) {
+  constructor(private type: ExchangeType, private url: string, public tick: boolean) {
     consola.start("Initializing");
+
     if (this.type === ExchangeType.WebSocket) {
       this.connection = new WebSocket(url);
       this.connection.onopen = this._onConnected;
@@ -30,32 +31,34 @@ export abstract class BaseExchange {
     }
   }
   aggregateOrderBookSide(
-    orderbookSide: Array<any>,
+    orderbookSide: OrderBookSide,
     precision: number,
     buy: boolean
-  ): void {
+  ): Array<OrderBookEntity> {
     const amounts: any = {};
-
+    var ret: Array<OrderBookEntity> = [];
     for (let i = 0; i < orderbookSide.length; i++) {
       const ask = orderbookSide[i];
       //CCXT = NIGGERS
-      const price = Math.floor(ask.price / precision) * precision;
+      const price = Math.floor(ask.startPrice / precision) * precision;
       amounts[price] = (amounts[price] || 0) + ask.size;
     }
 
     Object.keys(amounts).forEach((price) => {
-      this.orderbook[buy ? "BUY" : "SELL"]?.push({
+      ret.push({
+        id: '',
         startPrice: parseFloat(price),
         endPrice: parseFloat(price) + (precision || 0),
         size: amounts[price],
       });
     });
+    return ret
   }
 
-  aggregateOrderBook(orderbook: Record<string, Array<any>>, precision: number) {
-    this.aggregateOrderBookSide(orderbook["asks"], precision, true);
-    this.aggregateOrderBookSide(orderbook["bids"], precision, false);
-    console.log(this.orderbook);
+  aggregateOrderBook(orderbook: Record<string, OrderBookSide>, precision: number) {
+    var buy = this.aggregateOrderBookSide(orderbook["asks"], precision, true);
+    var sell = this.aggregateOrderBookSide(orderbook["bids"], precision, false);
+    return {buy, sell}
   }
   abstract onConnected(): void;
 
