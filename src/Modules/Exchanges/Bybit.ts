@@ -4,6 +4,9 @@ import { OrderBookEntity } from "../Types/OrderBookEntity";
 import { OrderBookSide } from "../Types/OrderBookSide";
 import {OHLCVEntity} from "../Types/OHLCVEntity"
 import {TradeEntity} from "../Types/TradeEntity"
+import axios from "axios";
+
+
 export class Bybit extends BaseExchange {
   private nig =0;
   private last_vol= 0;
@@ -108,17 +111,36 @@ export class Bybit extends BaseExchange {
     });
   }
 
-  public onConnected() {
+  async onConnected() {
     // https://bybit-exchange.github.io/docs/inverse/#t-websocketorderbook200
     const  interval = 1
     const ticker = 'BTCUSD'
+    //await this.historicalKline(Math.floor((Number(new Date())) /1000 )-(200*60) , ticker, interval)
     this.send(
       
-      //JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
+      JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
       //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.${ticker}`] })
-      JSON.stringify({ op: "subscribe", args: [`trade.${ticker}`] })
+      //JSON.stringify({ op: "subscribe", args: [`trade.${ticker}`] })
       // JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
     );
+  }
+
+  // LIMIT IS 200, SO MAKE SURE TO ONLY QUERY 200 BRUV
+  public async historicalKline(from: Number, ticker: any, interval: any){
+    console.log(from)
+    //https://bybit-exchange.github.io/docs/inverse/#t-querykline
+    const { data } = await axios.get(
+      "https://api.bybit.com/v2/public/kline/list", {params: {
+        symbol: ticker,
+        interval: interval,
+        from
+      }});
+      
+      data.result.forEach((element: any) => {
+        console.log(element.open, element.high, element.low, element.close, element.volume)
+      });
+      //console.log( data.result)
+    
   }
   public onMessage(data: any) {   
 
@@ -133,7 +155,6 @@ export class Bybit extends BaseExchange {
       }
 
       topic = topic.replace(ticker, "")
-      console.log("topic: ", topic)
     }
     
     //console.log(topic);
@@ -223,10 +244,10 @@ export class Bybit extends BaseExchange {
           console.log(`DUMB NIGGER ALERT DUMB NIGGER ALERT ${Math.random()}`)
         }
         else{
-          console.log(idx, this.orderbook[delete_element.side ? "BUY" : "SELL"].length, delete_element.side)
+          //console.log(idx, this.orderbook[delete_element.side ? "BUY" : "SELL"].length, delete_element.side)
           this.orderbook[delete_element.side == "Buy" ? "BUY" : "SELL"][idx].id = delete_element.id
           this.orderbook[delete_element.side == "Buy" ? "BUY" : "SELL"][idx].size = 0
-          //this.printBook(true);
+          this.printBook(true);
         }
       });
       data.data.insert.forEach((insert_element: any) => {
@@ -239,12 +260,12 @@ export class Bybit extends BaseExchange {
           //console.log(this.orderbook)
           //console.log(`DUMB INSERT ALERT DUMB INSERT ALERT ${Math.random()}`)
           this.orderbook[insert_element.side == "Buy" ? "BUY" : "SELL"].push({startPrice: insert_element.price, endPrice: 0,  size: insert_element.size, id: insert_element.id})
-          //this.printBook(true);
+          this.printBook(true);
         }
         else{
           this.orderbook[insert_element.side == "Buy" ? "BUY" : "SELL"][idx].id = insert_element.id
           this.orderbook[insert_element.side == "Buy" ? "BUY" : "SELL"][idx].size = Number(insert_element.price)
-          //this.printBook(true);
+          this.printBook(true);
         }
 
       });
@@ -258,7 +279,7 @@ export class Bybit extends BaseExchange {
         else{
           this.orderbook[update_element.side == "Buy" ? "BUY" : "SELL"][idx].id = update_element.id
           this.orderbook[update_element.side == "Buy" ? "BUY" : "SELL"][idx].size = Number(update_element.price)
-          //this.printBook(true);
+          this.printBook(true);
 
         }
         

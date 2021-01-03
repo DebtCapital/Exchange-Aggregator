@@ -6,7 +6,7 @@ import axios from "axios";
 
 export class Binance extends BaseExchange {
   constructor() {
-    super(ExchangeType.WebSocket, "wss://stream.binance.com:9443/ws/stream");
+    super(ExchangeType.WebSocket, "wss://stream.binance.com:9443/ws/stream", true);
   }
   subscribe(streams: Array<string>) {
     const message = {
@@ -18,8 +18,7 @@ export class Binance extends BaseExchange {
   }
   async onConnected() {
     const { data } = await axios.get(
-      "https://www.binance.com/api/v3/ticker/24hr"
-    );
+      "https://www.binance.com/api/v3/ticker/24hr");
     const pairs = data.map((pair: any) => `${pair.symbol.toLowerCase()}@trade`);
 
     const first = pairs.slice(0, 500);
@@ -30,6 +29,8 @@ export class Binance extends BaseExchange {
   }
   onMessage(message: any) {
     const trade: TradeEntity = {
+      
+      timestamp: message.T,
       price: message.p,
       size: message.q,
       ticker: message.s,
