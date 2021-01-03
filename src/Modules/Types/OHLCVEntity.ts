@@ -4,4 +4,5 @@ export type OHLCVEntity = {
   Low: number;
   Close: number;
   Volume: number;
+  Timestamp: number;
 };
