@@ -6,6 +6,8 @@ import { TradeEntity } from "../Types/TradeEntity";
 import { OrderBookSide } from "../Types/OrderBookSide";
 import { OrderBookEntity } from "../Types/OrderBookEntity";
 import Logger from "../Utils/Logger";
+import { Server as WebSocketServer } from "../Server";
+import { WebSocketChannels } from "../Enums/WebSocketChannels";
 export abstract class BaseExchange {
   // orderbooks
   // ohlc[v]
@@ -18,9 +20,13 @@ export abstract class BaseExchange {
   public orderbook: OrderBook = { SELL: [], BUY: [] };
   public ohlcv: Array<OHLCVEntity> = [];
   public trades: Array<TradeEntity> = [];
-  public logger = new Logger(this.constructor.name);
+  public logger = new Logger(this.exchangeName);
 
-  constructor(private type: ExchangeType, private url: string, public tick: boolean) {
+  constructor(
+    private type: ExchangeType,
+    private url: string,
+    public tick: boolean
+  ) {
     this.logger.log("Initializing...");
     if (this.type === ExchangeType.WebSocket) {
       this.connection = new WebSocket(url);
@@ -45,24 +51,26 @@ export abstract class BaseExchange {
 
     Object.keys(amounts).forEach((price) => {
       ret.push({
-        id: '',
+        id: "",
         startPrice: parseFloat(price),
         endPrice: parseFloat(price) + (precision || 0),
         size: amounts[price],
       });
     });
-    return ret
+    return ret;
   }
-
-  aggregateOrderBook(orderbook: Record<string, OrderBookSide>, precision: number) {
+  aggregateOrderBook(
+    orderbook: Record<string, OrderBookSide>,
+    precision: number
+  ) {
     var buy = this.aggregateOrderBookSide(orderbook["asks"], precision, true);
     var sell = this.aggregateOrderBookSide(orderbook["bids"], precision, false);
-    return {buy, sell}
+    return { buy, sell };
   }
   abstract onConnected(): void;
 
   _onDisconnect = () => {
-    console.log(this.constructor.prototype.name, "Connection lost");
+    this.logger.error("Connection lost");
   };
   _onConnected = () => {
     this.logger.success("Connected to: " + this.url);
@@ -80,8 +88,18 @@ export abstract class BaseExchange {
     this.logger.log(`Received a message: \n${message}`);
     this.connection.send(payload);
   }
-
+  get exchangeName(): string {
+    return this.constructor.name;
+  }
   addTransaction(trade: TradeEntity) {
     this.trades.push(trade);
+    WebSocketServer.broadcast(
+      WebSocketChannels.TRADES,
+      trade,
+      (sub: any) => {
+        return sub.pair === trade.ticker;
+      },
+      this.exchangeName
+    );
   }
 }
