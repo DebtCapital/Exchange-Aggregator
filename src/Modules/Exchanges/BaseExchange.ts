@@ -3,8 +3,8 @@ import WebSocket from "isomorphic-ws";
 import { OrderBook } from "../Types/OrderBook";
 import { OHLCVEntity } from "../Types/OHLCVEntity";
 import { TradeEntity } from "../Types/TradeEntity";
-import { OrderBookSide } from "../Types/OrderBookSide";
-import consola from "consola";
+import Logger from "../Utils/Logger";
+import chalk from "chalk";
 export abstract class BaseExchange {
   // orderbooks
   // ohlc[v]
@@ -17,16 +17,15 @@ export abstract class BaseExchange {
   public orderbook: OrderBook = { SELL: [], BUY: [] };
   public ohlcv: Array<OHLCVEntity> = [];
   public trades: Array<TradeEntity> = [];
+  private logger = new Logger(this.constructor.name);
 
   constructor(private type: ExchangeType, private url: string) {
-    consola.start("Initializing");
+    this.logger.log("Initializing...");
     if (this.type === ExchangeType.WebSocket) {
       this.connection = new WebSocket(url);
       this.connection.onopen = this._onConnected;
       this.connection.onmessage = this._onMessage;
-      this.connection.onclose = (aa: any) => {
-        console.log(aa);
-      };
+      this.connection.onclose = this._onDisconnect;
     }
   }
   aggregateOrderBookSide(
@@ -44,11 +43,12 @@ export abstract class BaseExchange {
     }
 
     Object.keys(amounts).forEach((price) => {
-      this.orderbook[buy ? "BUY" : "SELL"]?.push({
-        startPrice: parseFloat(price),
-        endPrice: parseFloat(price) + (precision || 0),
-        size: amounts[price],
-      });
+      // this.orderbook[buy ? "BUY" : "SELL"]?.push({
+      //   id: "TEST",
+      //   startPrice: parseFloat(price),
+      //   endPrice: parseFloat(price) + (precision || 0),
+      //   size: amounts[price],
+      // });
     });
   }
 
@@ -63,18 +63,19 @@ export abstract class BaseExchange {
     console.log(this.constructor.prototype.name, "Connection lost");
   };
   _onConnected = () => {
-    console.log(this.constructor);
-    console.log("Connected to:", this.url);
+    this.logger.success("Connected to: " + this.url);
     this.onConnected();
   };
 
-  _onMessage = (payload: MessageEvent) => {
-    this.onMessage(JSON.parse(payload.data));
+  _onMessage = (payload: WebSocket.MessageEvent): void => {
+    this.onMessage(JSON.parse(payload.data.toString()));
   };
   abstract onMessage(message: object): void;
 
   send(payload: string) {
-    console.log("Sending:", payload);
+    if (!this.connection) throw new Error("Can't send without connection!");
+    const message = JSON.stringify(JSON.parse(payload), null, 4);
+    this.logger.log(`Received a message: \n${message}`);
     this.connection.send(payload);
   }
 
