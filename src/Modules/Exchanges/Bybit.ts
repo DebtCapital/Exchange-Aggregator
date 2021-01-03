@@ -27,7 +27,7 @@ export class Bybit extends BaseExchange {
     // first message
     if(data.data.funding_rate_e6){
       this.futs = {"funding": data.data.funding_rate_e6, "predicted_funding": data.data.predicted_funding_rate_e6, "next_funding_time": data.data.next_funding_time, "open_interest": data.data.open_interest, "countdown_hour": data.data.countdown_hour}
-      console.log(this.futs)
+      //console.log(this.futs)
     }
     //updates
     else{
