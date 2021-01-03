@@ -22,7 +22,7 @@ export class Bybit extends BaseExchange {
   
   */
 
-  private instrumentInfoHandler(data: any){
+  private instrumentInfoHandler(data: any, ticker: string){
     // oi, funding, predicted funding, funding time, countdown to funding
     // first message
     if(data.data.funding_rate_e6){
@@ -50,13 +50,13 @@ export class Bybit extends BaseExchange {
   }
 
 
-  private tradeHandler(data: any){
+  private tradeHandler(data: any, ticker: string){
     //console.clear()
     //console.log(data)
     data.data.forEach((element:any) => {
       var side = element.tick_direction.replace("Zero", "")
 
-      var trade:TradeEntity = {size: element.size, timestamp: element.trade_time_ms, ticker:data.topic.replace("trade.", ""),price: element.price }
+      var trade:TradeEntity = {size: element.size, timestamp: element.trade_time_ms, ticker,price: element.price }
       this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
     });
 
@@ -76,7 +76,7 @@ export class Bybit extends BaseExchange {
      // do whatever you like with the ticks
   }
 
-  private KlineV2Handler(data:any) {
+  private KlineV2Handler(data:any, ticker: string) {
     data.data.forEach((element: any) => {
 
       
@@ -120,8 +120,22 @@ export class Bybit extends BaseExchange {
       // JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
     );
   }
-  public onMessage(data: any) {
+  public onMessage(data: any) {   
+
+
     var topic = data.topic;
+    var ticker = "";
+    if(topic){
+      
+      var tmp = /[^.]*$/.exec(topic) 
+      if(tmp!= null){
+        ticker = tmp[0];
+      }
+
+      topic = topic.replace(ticker, "")
+      console.log("topic: ", topic)
+    }
+    
     //console.log(topic);
     switch (topic) {
       // PUBLIC TOPICS RELEVANT TO US
@@ -129,26 +143,26 @@ export class Bybit extends BaseExchange {
       // orderbook ->
       //     200 orders per side
       //     delete and update fields useful
-      case "orderBook_200.100ms.BTCUSD": {
-        this.OrderbookHandler(data);
+      case "orderBook_200.100ms.": {
+        this.OrderbookHandler(data, ticker);
         break;
       }
 
       // Get Live trades, useful for tick charts
-      case "trade.BTCUSD": {
-        this.tradeHandler(data);
+      case "trade.": {
+        this.tradeHandler(data, ticker);
         break;
       }
 
       // idk yet, might be important for tick charts not sure
-      case "instrument_info.100ms.BTCUSD": {
-        this.instrumentInfoHandler(data);
+      case "instrument_info.100ms.": {
+        this.instrumentInfoHandler(data, ticker);
         break;
       }
       // live chart data, timeframes: 1, 3, 5, 15, 30,
       //                    60, 120, 240, 360, D, W, M
-      case "klineV2.1.BTCUSD": {
-        this.KlineV2Handler(data);
+      case "klineV2.1.": {
+        this.KlineV2Handler(data, ticker);
         break;
       }
 
@@ -194,7 +208,7 @@ export class Bybit extends BaseExchange {
     29230.0 -> 29240.0  3,363,306.0
     29240.0 -> 29243.5  3,260,962.0
  */
-  private OrderbookHandler(data: any): Array<any> {
+  private OrderbookHandler(data: any, ticker: string): Array<any> {
     const Sell: any[] = [];
     const Buy: any[] = [];
 
