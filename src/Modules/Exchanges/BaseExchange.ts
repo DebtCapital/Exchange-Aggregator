@@ -102,4 +102,16 @@ export abstract class BaseExchange {
       this.exchangeName
     );
   }
+  printBook() {
+    console.clear();
+
+    var nigs = []
+    const books = this.aggregateOrderBook({asks: this.orderbook.BUY, bids: this.orderbook.SELL}, 10);
+    for(let i = 0; i < Math.max(books.buy.length, books.sell.length); i++){
+      const str1 = i < books.buy.length? `${books.buy[i].startPrice} ${books.buy[i].endPrice} ${books.buy[i].size}`: "          ";
+      const str2 = i < books.sell.length? `${books.sell[i].startPrice} ${books.sell[i].endPrice} ${books.sell[i].size}` : "";
+      console.log("\x1b[32m"+str1, "\x1b[31m"+str2, '\x1b[0m');
+    }
+
+  }
 }
