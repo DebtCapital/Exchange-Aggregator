@@ -17,7 +17,7 @@ export abstract class BaseExchange {
 
   // {"op": "subscribe", "args": ["orderBookL2_200"]} <- bybit
   private connection;
-  public orderbook: OrderBook = { SELL: [], BUY: [] };
+  public orderbook: Record<string, OrderBook> = {};
   public ohlcv: Array<OHLCVEntity> = [];
   public trades: Array<TradeEntity> = [];
   public logger = new Logger(this.exchangeName);
