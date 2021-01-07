@@ -9,6 +9,12 @@ export class Binance extends BaseExchange {
     super(ExchangeType.WebSocket, "wss://stream.binance.com:9443/ws/stream", true);
   }
   subscribe(streams: Array<string>) {
+    /*
+    const message = {
+      method: "SUBSCRIBE",
+      params: streams,
+      id: 1,
+    };*/
     const message = {
       method: "SUBSCRIBE",
       params: streams,
@@ -21,22 +27,32 @@ export class Binance extends BaseExchange {
       "https://www.binance.com/api/v3/ticker/24hr");
     const pairs = data.map((pair: any) => `${pair.symbol.toLowerCase()}@trade`);
 
-    const first = pairs.slice(0, 500);
-    const second = pairs.slice(500, 1000);
-    this.subscribe(first);
-    this.subscribe(second);
+    //const first = pairs.slice(0, 500);
+    //const second = pairs.slice(500, 1000);
+    //this.subscribe(first);
+    //this.subscribe(second);
 
   }
   onMessage(message: any) {
-    
-    const trade: TradeEntity = {
+
+
+    switch(message.e){
+      case "trade":{
+      const trade: TradeEntity = {
+        
+        timestamp: message.T,
+        price: message.p,
+        size: message.q,
+        ticker: message.s,
+      };
+      this.logger.log(JSON.stringify(trade), "Trade")
+      this.addTransaction(trade);
+    }
+    case "depthUpdate":{
       
-      timestamp: message.T,
-      price: message.p,
-      size: message.q,
-      ticker: message.s,
-    };
-    this.logger.log(JSON.stringify(trade), "Trade")
-    this.addTransaction(trade);
+    }
+  }
+
+  
   }
 }
