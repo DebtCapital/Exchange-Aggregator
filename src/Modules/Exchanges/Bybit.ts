@@ -270,6 +270,8 @@ export class Bybit extends BaseExchange {
             orderbookElement.id == delete_element.id
         );
 
+        //sdaf
+
         if (idx == -1) {
           console.log(`DUMB NIGGER ALERT DUMB NIGGER ALERT ${Math.random()}`);
         } else {
