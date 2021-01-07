@@ -49,7 +49,7 @@ export class Binance extends BaseExchange {
       this.addTransaction(trade);
     }
     case "depthUpdate":{
-      
+
     }
   }
 
