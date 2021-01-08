@@ -139,9 +139,9 @@ export class Bybit extends BaseExchange {
     const ticker = "BTCUSD";
     //await this.historicalKline(Math.floor((Number(new Date())) /1000 )-(200*60) , ticker, interval)
     this.send(
-      //JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
+      JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
       //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.${ticker}`] })
-      JSON.stringify({ op: "subscribe", args: [`trade.${ticker}`] })
+      //JSON.stringify({ op: "subscribe", args: [`trade.${ticker}`] })
       // JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
     );
   }
@@ -260,9 +260,13 @@ export class Bybit extends BaseExchange {
     const Sell: any[] = [];
     const Buy: any[] = [];
 
+    if(!this.orderbook[ticker]){
+      this.orderbook[ticker] = {SELL: [], BUY:[]  };
+    }
+
     if (data.data.delete) {
       data.data.delete.forEach((delete_element: any) => {
-        var idx = this.orderbook[
+        var idx = this.orderbook[ticker][
           delete_element.side == "Buy" ? "BUY" : "SELL"
         ].findIndex(
           (orderbookElement: OrderBookEntity) =>
@@ -270,24 +274,20 @@ export class Bybit extends BaseExchange {
             orderbookElement.id == delete_element.id
         );
 
-        //sdaf
 
         if (idx == -1) {
           console.log(`DUMB NIGGER ALERT DUMB NIGGER ALERT ${Math.random()}`);
         } else {
           //console.log(idx, this.orderbook[delete_element.side ? "BUY" : "SELL"].length, delete_element.side)
-          this.orderbook[delete_element.side == "Buy" ? "BUY" : "SELL"][
+          this.orderbook[ticker][delete_element.side == "Buy" ? "BUY" : "SELL"][
             idx
           ].id = delete_element.id;
-          this.orderbook[delete_element.side == "Buy" ? "BUY" : "SELL"][
-            idx
-          ].size = 0;
-          this.printBook();
+          this.orderbook[ticker][delete_element.side == "Buy" ? "BUY" : "SELL"].splice(idx, 1);
         }
       });
       data.data.insert.forEach((insert_element: any) => {
         //console.log("INSERT")
-        var idx = this.orderbook[
+        var idx = this.orderbook[ticker][
           insert_element.side == "Buy" ? "BUY" : "SELL"
         ].findIndex(
           (orderbookElement: OrderBookEntity) =>
@@ -298,25 +298,23 @@ export class Bybit extends BaseExchange {
           //console.log(delete_element)
           //console.log(this.orderbook)
           //console.log(`DUMB INSERT ALERT DUMB INSERT ALERT ${Math.random()}`)
-          this.orderbook[insert_element.side == "Buy" ? "BUY" : "SELL"].push({
+          this.orderbook[ticker][insert_element.side == "Buy" ? "BUY" : "SELL"].push({
             startPrice: insert_element.price,
             endPrice: 0,
             size: insert_element.size,
             id: insert_element.id,
           });
-          this.printBook();
         } else {
-          this.orderbook[insert_element.side == "Buy" ? "BUY" : "SELL"][
+          this.orderbook[ticker][insert_element.side == "Buy" ? "BUY" : "SELL"][
             idx
           ].id = insert_element.id;
-          this.orderbook[insert_element.side == "Buy" ? "BUY" : "SELL"][
+          this.orderbook[ticker][insert_element.side == "Buy" ? "BUY" : "SELL"][
             idx
           ].size = Number(insert_element.price);
-          this.printBook();
         }
       });
       data.data.update.forEach((update_element: any) => {
-        var idx = this.orderbook[
+        var idx = this.orderbook[ticker][
           update_element.side == "Buy" ? "BUY" : "SELL"
         ].findIndex(
           (orderbookElement: OrderBookEntity) =>
@@ -326,13 +324,12 @@ export class Bybit extends BaseExchange {
         if (idx == -1) {
           console.log(`DUMB UPDATE ALERT DUMB UPDATE ALERT ${Math.random()}`);
         } else {
-          this.orderbook[update_element.side == "Buy" ? "BUY" : "SELL"][
+          this.orderbook[ticker][update_element.side == "Buy" ? "BUY" : "SELL"][
             idx
           ].id = update_element.id;
-          this.orderbook[update_element.side == "Buy" ? "BUY" : "SELL"][
+          this.orderbook[ticker][update_element.side == "Buy" ? "BUY" : "SELL"][
             idx
           ].size = Number(update_element.price);
-          this.printBook();
         }
       });
     } else {
@@ -344,14 +341,14 @@ export class Bybit extends BaseExchange {
           size: element.size,
         };
         if (element.side == "Buy") {
-          this.orderbook.BUY.push(FORMATTED);
+          this.orderbook[ticker].BUY.push(FORMATTED);
         } else {
-          this.orderbook.SELL.push(FORMATTED);
+          this.orderbook[ticker].SELL.push(FORMATTED);
         }
       });
       //this.aggregateOrderBook({ bids: Sell, asks: Buy }, 10);
     }
-    //this.printBook(true);
+    this.printBook(ticker);
     return [];
   }
 }

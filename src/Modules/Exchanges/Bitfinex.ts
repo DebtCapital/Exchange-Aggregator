@@ -79,6 +79,7 @@ export class Bitfinex extends BaseExchange {
       // https://docs.bitfinex.com/reference#ws-public-books
       case "book": {
         const precision = 10;
+        const ticker = this.channelToTicker[message[0]][1];
         if (message[1][0] instanceof Array) {
           //console.log(message)
           // Snapshot
@@ -90,12 +91,11 @@ export class Bitfinex extends BaseExchange {
               endPrice: element[0] + precision,
               size: element[2] > 0 ? element[2] : element[2] * -1,
             };
-            this.orderbook[element[2] > 0 ? "BUY" : "SELL"].push(book);
+            this.orderbook[ticker][element[2] > 0 ? "BUY" : "SELL"].push(book);
           });
-          //this.printBook();
         } else {
           // updates
-          var idx = this.orderbook[
+          var idx = this.orderbook[ticker][
             message[1][2] > 0 ? "BUY" : "SELL"
           ].findIndex(
             (orderbookElement: OrderBookEntity) =>
@@ -111,21 +111,21 @@ export class Bitfinex extends BaseExchange {
                 endPrice: message[1][0] + precision,
                 size: message[1][2] > 0 ? message[1][2] : message[1][2] * -1,
               };
-              this.orderbook[message[1][2] > 0 ? "BUY" : "SELL"].push(book);
+              this.orderbook[ticker][message[1][2] > 0 ? "BUY" : "SELL"].push(book);
             } else {
               if (idx != -1) {
-                this.orderbook[message[1][2] > 0 ? "BUY" : "SELL"][idx].size =
+                this.orderbook[ticker][message[1][2] > 0 ? "BUY" : "SELL"][idx].size =
                   message[1][2] > 0 ? message[1][2] : message[1][2] * -1;
               } else {
                 console.log("NIGGER");
               }
             }
           } else {
-            this.orderbook[message[1][2] > 0 ? "BUY" : "SELL"].splice(idx, 1);
+            this.orderbook[ticker][message[1][2] > 0 ? "BUY" : "SELL"].splice(idx, 1);
           }
           //console.log(message);
         }
-        this.printBook();
+        this.printBook(ticker);
       }
     }
   }
