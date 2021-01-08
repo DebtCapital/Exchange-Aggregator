@@ -135,13 +135,40 @@ export class Bybit extends BaseExchange {
 
   async onConnected() {
     // https://bybit-exchange.github.io/docs/inverse/#t-websocketorderbook200
-    const interval = 1;
-    const ticker = "BTCUSD";
+    var strshit = "";
+
+    // START PAJEET CODE
+    const { data } = await axios.get("https://api.bybit.com/v2/public/symbols");
+    console.log(data);
+    var strshit2 = "";
+    var tickers: Array<string> = [];
+    data.result.forEach((element: any, idx: any, arr: any) => {
+      tickers.push(element.name);
+
+      if(element.name.endsWith("USDT")){
+        strshit2+=element.name
+        strshit2+="|";
+      }
+      else{
+        strshit+=element.name;
+        strshit+="|"; 
+      }
+    });
+    strshit=strshit.slice(0, -1)
+    strshit2=strshit2.slice(0, -1)
+
+    console.log(tickers)
+    // END PAJEET CODE
+
+    
     //await this.historicalKline(Math.floor((Number(new Date())) /1000 )-(200*60) , ticker, interval)
     this.send(
-      JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
+      //JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
       //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.${ticker}`] })
-      //JSON.stringify({ op: "subscribe", args: [`trade.${ticker}`] })
+
+      // subs only to inverse atm
+      JSON.stringify({ op: "subscribe", args: [`trade.${strshit}`] })
+      //'{"op": "subscribe", "args": ["trade.BTCUSDT"]}'
       // JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
     );
   }
@@ -260,8 +287,8 @@ export class Bybit extends BaseExchange {
     const Sell: any[] = [];
     const Buy: any[] = [];
 
-    if(!this.orderbook[ticker]){
-      this.orderbook[ticker] = {SELL: [], BUY:[]  };
+    if (!this.orderbook[ticker]) {
+      this.orderbook[ticker] = { SELL: [], BUY: [] };
     }
 
     if (data.data.delete) {
@@ -274,7 +301,6 @@ export class Bybit extends BaseExchange {
             orderbookElement.id == delete_element.id
         );
 
-
         if (idx == -1) {
           console.log(`DUMB NIGGER ALERT DUMB NIGGER ALERT ${Math.random()}`);
         } else {
@@ -282,7 +308,9 @@ export class Bybit extends BaseExchange {
           this.orderbook[ticker][delete_element.side == "Buy" ? "BUY" : "SELL"][
             idx
           ].id = delete_element.id;
-          this.orderbook[ticker][delete_element.side == "Buy" ? "BUY" : "SELL"].splice(idx, 1);
+          this.orderbook[ticker][
+            delete_element.side == "Buy" ? "BUY" : "SELL"
+          ].splice(idx, 1);
         }
       });
       data.data.insert.forEach((insert_element: any) => {
@@ -298,7 +326,9 @@ export class Bybit extends BaseExchange {
           //console.log(delete_element)
           //console.log(this.orderbook)
           //console.log(`DUMB INSERT ALERT DUMB INSERT ALERT ${Math.random()}`)
-          this.orderbook[ticker][insert_element.side == "Buy" ? "BUY" : "SELL"].push({
+          this.orderbook[ticker][
+            insert_element.side == "Buy" ? "BUY" : "SELL"
+          ].push({
             startPrice: insert_element.price,
             endPrice: 0,
             size: insert_element.size,

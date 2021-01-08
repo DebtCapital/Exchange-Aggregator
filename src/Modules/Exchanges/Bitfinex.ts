@@ -36,49 +36,35 @@ export class Bitfinex extends BaseExchange {
   async onConnected() {
     this.subscribe();
   }
-  onMessage(message: any) {
-    //console.log(typeof message, message);
-    if (!(message instanceof Array)) {
+  tradeHandler(message: any){
+    if (message[1].includes("te") || message[1].includes("tu")) {
+      //update
+      //console.log("data: ",message)
+      var trade: TradeEntity = {
+        size: message[2][2],
+        timestamp: message[2][1],
+        price: message[2][3],
+        ticker: this.channelToTicker[message[0]][1],
+      };
+      //this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
+      this.addTransaction(trade);
+    } else {
       console.log(message);
-      this.channelToTicker[message.chanId] = [
-        message.symbol,
-        message.pair,
-        message.channel,
-      ];
-      return;
-    }
-    //console.log(this.channelToTicker[message[0]][2])
-    switch (this.channelToTicker[message[0]][2]) {
-      case "trades": {
-        if (message[1].includes("te") || message[1].includes("tu")) {
-          //update
-          //console.log("data: ",message)
-          var trade: TradeEntity = {
-            size: message[2][2],
-            timestamp: message[2][1],
-            price: message[2][3],
-            ticker: this.channelToTicker[message[0]][1],
-          };
-          //this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
-          this.addTransaction(trade);
-        } else {
-          console.log(message);
-          message[1].forEach((element: any) => {
-            // new trade
-            var trade: TradeEntity = {
-              size: element[2],
-              timestamp: element[1],
-              price: element[3],
-              ticker: this.channelToTicker[message[0]][1],
-            };
+      message[1].forEach((element: any) => {
+        // new trade
+        var trade: TradeEntity = {
+          size: element[2],
+          timestamp: element[1],
+          price: element[3],
+          ticker: this.channelToTicker[message[0]][1],
+        };
 
-            this.addTransaction(trade);
-          });
-        }
-      }
-      // https://docs.bitfinex.com/reference#ws-public-books
-      case "book": {
-        const precision = 10;
+        this.addTransaction(trade);
+      });
+    }
+  }
+  BookHandler(message:any){
+    const precision = 10;
         const ticker = this.channelToTicker[message[0]][1];
         if (message[1][0] instanceof Array) {
           //console.log(message)
@@ -126,6 +112,28 @@ export class Bitfinex extends BaseExchange {
           //console.log(message);
         }
         this.printBook(ticker);
+  }
+  onMessage(message: any) {
+    //console.log(typeof message, message);
+    if (!(message instanceof Array)) {
+      console.log(message);
+      this.channelToTicker[message.chanId] = [
+        message.symbol,
+        message.pair,
+        message.channel,
+      ];
+      return;
+    }
+    //console.log(this.channelToTicker[message[0]][2])
+    switch (this.channelToTicker[message[0]][2]) {
+      case "trades": {
+        this.tradeHandler(message);
+        break;
+      }
+      // https://docs.bitfinex.com/reference#ws-public-books
+      case "book": {
+        this.BookHandler(message);
+        break;
       }
     }
   }
