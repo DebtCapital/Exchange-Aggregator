@@ -8,6 +8,7 @@ import { OrderBookEntity } from "../Types/OrderBookEntity";
 import Logger from "../Utils/Logger";
 import { Server as WebSocketServer } from "../Server";
 import { WebSocketChannels } from "../Enums/WebSocketChannels";
+import { OHLCV } from "../OHLCV";
 export abstract class BaseExchange {
   // orderbooks
   // ohlc[v]
@@ -21,6 +22,7 @@ export abstract class BaseExchange {
   public ohlcv: Array<OHLCVEntity> = [];
   public trades: Array<TradeEntity> = [];
   public logger = new Logger(this.exchangeName);
+  private ohlcvLedger = new OHLCV(this.exchangeName);
 
   constructor(
     private type: ExchangeType,
@@ -101,6 +103,7 @@ export abstract class BaseExchange {
       },
       this.exchangeName
     );
+    this.ohlcvLedger.addTrade(trade);
   }
   printBook(ticker: string) {
     console.clear();

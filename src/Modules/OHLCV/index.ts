@@ -1,60 +1,88 @@
 import { OHLCVEntity } from "../Types/OHLCVEntity";
 import { TradeEntity } from "../Types/TradeEntity";
-import moment, { duration } from "moment";
-
+import moment from "moment";
+import { Server as WebSocketServer } from "../Server";
+import { WebSocketChannels } from "../Enums/WebSocketChannels";
 export class OHLCV {
-  private trades: Array<TradeEntity> = [];
+  private _trades: Array<TradeEntity> = [];
+  private _latest: Record<string, Record<string, OHLCVEntity>> = {};
+  private timeframes: Array<number> = [1, 3, 30, 60];
+  private _candles: Record<string, Record<string, Array<OHLCVEntity>>> = {};
 
-  private timeframes: Array<number> = [2, 4, 6];
+  constructor(private exchangeName: string) {}
 
   private round(date: Date, duration: any) {
-    return moment(Math.floor(+date / +duration) * +duration);
+    return moment(Math.floor(+date / +duration) * +duration)
+      .toDate()
+      .getTime();
   }
+
   public addTrade(trade: TradeEntity) {
-    console.log();
-    for (const timeframe of this.timeframes) {
-      var roundedDate = this.round(
-        new Date(trade.timestamp),
-        moment.duration(timeframe, "second")
-      );
-      this.trades.push(trade);
+    this._trades.push(trade);
+    this.buildLatestCandles(trade.ticker);
+  }
+
+  private ensureRecords(ticker: string, tf: number) {
+    if (!this._candles[ticker]) {
+      this._candles[ticker] = {};
+    }
+    if (!this._latest[ticker]) {
+      this._latest[ticker] = {};
+    }
+    if (!this._candles[ticker][tf]) {
+      this._candles[ticker][tf] = [];
     }
   }
+  private saveCandle(ohlcv: OHLCVEntity, ticker: string, timeframe: number) {
+    const latest = this._latest[ticker][timeframe];
 
-  private roundToSecond(timestamp: number): string {
-    return moment(timestamp).startOf("second").toDate().toISOString();
+    if (latest && latest.Timestamp != ohlcv.Timestamp) {
+      this._candles[ticker][timeframe].push(ohlcv);
+    }
+
+    this._latest[ticker][timeframe] = ohlcv;
+
+    WebSocketServer.broadcast(
+      WebSocketChannels.OHLCV,
+      ohlcv,
+      (sub: any) => {
+        return sub.ticker === ticker && sub.exchange === this.exchangeName;
+      },
+      this.exchangeName
+    );
   }
-  candlesFromTrades(
-    seconds: number,
-    ticker: string,
-    trades: Array<TradeEntity>
-  ) {
-    const mappedTrades: Record<string, Array<TradeEntity>> = trades
-      .filter((trade) => trade.ticker === ticker)
-      .reduce((r, a) => {
-        r[this.roundToSecond(a.timestamp)] = [
-          ...(r[this.roundToSecond(a.timestamp)] || []),
-          a,
-        ];
-        return r;
-      }, {} as any);
 
-    const ohlcvArray: Array<OHLCVEntity> = [];
+  private buildLatestCandles(ticker: string) {
+    for (const tf of this.timeframes) {
+      this.ensureRecords(ticker, tf);
 
-    for (const log in mappedTrades) {
-      const logTrades = mappedTrades[log];
+      const lastCandle = this.round(this.roundToSecond(), tf * 1000);
 
-      const prices = logTrades.map((logTrade) => logTrade.price);
+      const tradeIndex = this._trades.findIndex(({ timestamp }) => {
+        return lastCandle <= timestamp;
+      });
+
+      if (tradeIndex == -1) continue;
+
+      const trades = this._trades.slice(tradeIndex, this._trades.length - 1);
+
+      const prices = trades
+        .filter((trade) => trade.ticker === ticker)
+        .map(({ price }) => price);
+        
       const ohlcv: OHLCVEntity = {
-        Open: logTrades[0].price,
+        Open: Number(prices[0]),
         High: Math.max(...prices),
         Low: Math.min(...prices),
-        Close: logTrades[logTrades.length - 1].price,
+        Close: Number(prices[prices.length - 1]) ,
         Volume: 0,
-        Timestamp: new Date(log).getTime(),
+        Timestamp: lastCandle,
       };
-      ohlcvArray.push(ohlcv);
+      this.saveCandle(ohlcv, ticker, tf);
     }
-    // console.log(ohlcvArray);
+  }
+
+  private roundToSecond(timestamp: number = new Date().getTime()): Date {
+    return moment(timestamp).startOf("second").toDate();
   }
 }
