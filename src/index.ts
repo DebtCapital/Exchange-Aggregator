@@ -7,9 +7,9 @@ import { Server } from "./Modules/Server";
 // Gotta assign this mfer or it wont init ????
 const WebSocketServer = Server;
 //const bb = new Binance();
-const test = new Bybit();
+//const test = new Bybit();
 //const nig = new Bitfinex()
 
-//const mex = new Bitmex();
+const mex = new Bitmex();
 
 //const cbpro = new CoinbasePro();

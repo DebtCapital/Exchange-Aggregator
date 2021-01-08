@@ -139,7 +139,6 @@ export class Bybit extends BaseExchange {
 
     // START PAJEET CODE
     const { data } = await axios.get("https://api.bybit.com/v2/public/symbols");
-    console.log(data);
     var strshit2 = "";
     var tickers: Array<string> = [];
     data.result.forEach((element: any, idx: any, arr: any) => {
