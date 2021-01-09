@@ -46,7 +46,7 @@ export class OHLCV {
       WebSocketChannels.OHLCV,
       ohlcv,
       (sub: any) => {
-        return sub.ticker === ticker && sub.exchange === this.exchangeName;
+        return sub.ticker === ticker && sub.exchange === this.exchangeName && timeframe === sub.timeframe;
       },
       this.exchangeName
     );
@@ -69,7 +69,7 @@ export class OHLCV {
       const prices = trades
         .filter((trade) => trade.ticker === ticker)
         .map(({ price }) => price);
-        
+
       const ohlcv: OHLCVEntity = {
         Open: Number(prices[0]),
         High: Math.max(...prices),
