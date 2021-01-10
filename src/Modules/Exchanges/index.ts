@@ -9,16 +9,16 @@ class ExchangesAggregator {
   private _exchanges: Array<BaseExchange> = [];
   public start(exchanges: Array<any>) {
     exchanges.forEach((exchange) => {
-      this._exchanges.push(new exchange[0]());
+      this._exchanges.push(new exchange());
     });
   }
 
   public searchTickers(exchange?: string, ticker?: string) {
     return this._exchanges
       .map(({ exchangeName, tickers }) => {
-        return { exchangeName, tickers };
+        return { exchangeName: exchangeName.toUpperCase(), tickers };
       })
-      .filter(({ exchangeName }) => exchangeName === exchange)
+      .filter(({ exchangeName }) => exchangeName === exchange || !exchange)
       .map(({ exchangeName, tickers }) => {
         if (ticker) {
           tickers = tickers.filter((tick) => tick.includes(ticker));

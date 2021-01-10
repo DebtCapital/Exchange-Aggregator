@@ -1,5 +1,5 @@
 export enum WebSocketCommands {
-  "SUBSCRIBE",
-  "UNSUBSCRIBE",
-  "QUERY"
+  SUBSCRIBE = "SUBSCRIBE",
+  UNSUBSCRIBE = "UNSUBSCRIBE",
+  QUERY = "QUERY",
 }

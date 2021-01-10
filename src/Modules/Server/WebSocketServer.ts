@@ -2,16 +2,19 @@ import express from "express";
 import * as http from "http";
 import * as WebSocket from "ws";
 import Logger from "../Utils/Logger";
-import { WebSocketMessage } from "../Types/WebSocketMessage";
 import { WebSocketCommands } from "../Enums/WebSocketCommands";
 import { WebSocketChannels } from "../Enums/WebSocketChannels";
 import { Exchanges } from "../Exchanges";
-
-
+import {
+  WebSocketConnection,
+  WebSocketPayload,
+  WebSocketSubscription,
+  WebSocketMessage,
+} from "../Types";
 export class WebSocketServer {
   private static wss: WebSocket.Server;
   private logger = new Logger("WebSocket");
-  private subscribtions: Record<string, any> = {};
+  private connections: Record<string, WebSocketConnection> = {};
   constructor() {
     const app = express();
     // initialize a simple http server
@@ -23,86 +26,89 @@ export class WebSocketServer {
     server.listen(process.env.PORT || 3000, this.onServerStart);
     WebSocketServer.wss.on("connection", this.onConnection);
   }
+  getKey(req: http.IncomingMessage): string {
+    return req.headers["sec-websocket-key"] as string;
+  }
   onConnection = (ws: WebSocket, req: http.IncomingMessage) => {
     this.logger.success("New Connection!");
-    const ID = req.headers["sec-websocket-key"] as string;
-    if (!ID) this.logger.error("NO WEBSOCKET KEY HEADER");
-    this.subscribtions[ID] = { connection: ws, list: [] };
+    const ID = this.getKey(req);
+    this.connections[ID] = { ws, list: [] };
     ws.on("message", (data: WebSocket.Data) => this.onMessage(ID, data));
-    ws.on("open", this.onOpen);
-    ws.on("close", this.onClose);
+    ws.on("close", () => this.onClose(ID));
   };
-  onOpen = (connection: WebSocket) => {
-    this.logger.success("Open Connection!");
-  };
-  onClose = (connection: WebSocket, code: number, reason: string) => {
+  onClose(ID: string) {
     this.logger.error("Connection lost!");
-    this.logger.log(code.toString());
-  };
-  onMessage(ID: string, data: WebSocket.Data) {
-    const payload = JSON.parse(data.toString()) as WebSocketMessage;
-    this.commandHandler(ID, payload);
+    delete this.connections[ID];
   }
-  commandHandler(sender: string, payload: WebSocketMessage) {
-    if (!Object.values(WebSocketCommands).includes(payload.command)) return;
-    if (!Object.values(WebSocketChannels).includes(payload.channel)) return;
+  onMessage(ID: string, data: WebSocket.Data) {
+    const payload = JSON.parse(data.toString());
+    if (Array.isArray(payload)) {
+      for (const data of payload) this.commandHandler(ID, data);
+    } else {
+      this.commandHandler(ID, payload);
+    }
+  }
 
+  commandHandler(ID: string, payload: WebSocketMessage) {
     switch (payload.command) {
-      case "SUBSCRIBE":
-        this.subscribe(sender, payload);
+      case WebSocketCommands.SUBSCRIBE:
+        this.subscribe(ID, payload);
         break;
-      case "UNSUBSCRIBE":
-        this.unsubscribe(sender, payload);
+      case WebSocketCommands.UNSUBSCRIBE:
+        this.unsubscribe(ID, payload);
         break;
-      case "QUERY":
-        this.query(sender, payload);
+      case WebSocketCommands.QUERY:
+        this.query(ID, payload);
         break;
       default:
+        this.sendToConnection(ID, { error: "Invalid message" });
         break;
     }
   }
   broadcast(
     channel: WebSocketChannels,
-    params: any,
+    data: any,
     filter: Function,
-    source: string | null
+    source: string
   ) {
-    for (let i = 0; i < Object.keys(this.subscribtions).length; i++) {
-      const key = Object.keys(this.subscribtions)[i];
-      if (
-        this.subscribtions[key].list.find(
-          (sub: any) => sub.channel === channel && filter(sub.data)
-        )
-      ) {
-        this.send(key, channel, params, source);
+    const findFilter = (sub: WebSocketSubscription) =>
+      sub.channel === channel && filter(sub.data);
+
+    for (const ID in this.connections) {
+      const { list } = this.connections[ID];
+      if (list.find(findFilter)) {
+        this.send(ID, channel, data, source);
       }
     }
   }
   subscribe(ID: string, payload: WebSocketMessage) {
-    this.subscribtions[ID].list.push({
-      channel: payload.channel,
-      data: payload.data,
+    const { channel, data } = payload;
+    this.connections[ID].list.push({
+      channel,
+      data,
     });
-    this.logger.log(`User: ${ID} subscribed to channel: ${payload.channel}`);
+    this.logger.log(`User: ${ID} subscribed to channel: ${channel}`);
   }
   query(ID: string, payload: WebSocketMessage) {
     const result = Exchanges.searchTickers(
       payload.data.exchange,
       payload.data.ticker
     );
-    this.send(ID, WebSocketChannels.TICKERS, result);
+    this.send(ID, WebSocketChannels.TICKERS, result, "QUERY_RESULT");
   }
 
   unsubscribe(ID: string, payload: WebSocketMessage) {}
-  onConnect = () => {};
 
-  send(ID: string, channel: string, data: any, source: string | null = null) {
-    const payload = {
+  send(ID: string, channel: WebSocketChannels, data: any, source: string) {
+    const payload: WebSocketPayload = {
       channel,
       source,
       data,
     };
-    this.subscribtions[ID].connection.send(JSON.stringify(payload));
+    this.sendToConnection(ID, payload);
+  }
+  sendToConnection(ID: string, message: any): void {
+    this.connections[ID].ws.send(JSON.stringify(message));
   }
   onServerStart = () => {
     this.logger.success(`WebSocket server started`);
