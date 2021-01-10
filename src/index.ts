@@ -1,6 +1,6 @@
-import { Binance,BybitUSDT, Bitmex, CoinbasePro, Exchanges } from "./Modules/Exchanges";
+import { Binance,BybitUSDT, Bitmex, CoinbasePro, Bitfinex, Exchanges } from "./Modules/Exchanges";
 
 import { Server } from "./Modules/Server";
 const WebSocketServer = Server;
 
-Exchanges.start([[CoinbasePro]]);
+Exchanges.start([[Bitfinex]]);

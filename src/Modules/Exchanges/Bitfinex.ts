@@ -16,24 +16,38 @@ export class Bitfinex extends BaseExchange {
     super(ExchangeType.WebSocket, "wss://api-pub.bitfinex.com/ws/2", true);
   }
   subscribe() {
-    /*
-    const message = {
-      event: "subscribe",
-      channel: "trades",
-      symbol: 'tBTCUSD'
-    };*/
-
-    const message = {
-      event: "subscribe",
-      channel: "book",
-      symbol: "tBTCUSD",
-      prec: "P1",
-      freq: "F0",
-      len: 1,
-    };
-    this.send(JSON.stringify(message));
+    this.tickers.forEach(element => {
+      
+    
+      
+      const message = {
+        event: "subscribe",
+        channel: "trades",
+        symbol: element
+      };
+/*
+      const message = {
+        event: "subscribe",
+        channel: "book",
+        symbol: element,
+        prec: "P1",
+        freq: "F0",
+        len: 1,
+      };*/
+      this.send(JSON.stringify(message));
+    }); 
   }
   async onConnected() {
+    const { data } = await axios.get(
+      "https://api-pub.bitfinex.com/v2/tickers",
+      {
+        params: {
+          symbols: "ALL"
+        },
+      }
+    );
+    this.tickers = data.filter((element: Array<any>) => element[0].startsWith("t")).map((element: Array<any>) => element[0])
+    console.log(this.tickers)
     this.subscribe();
   }
   tradeHandler(message: any){
@@ -46,7 +60,7 @@ export class Bitfinex extends BaseExchange {
         price: message[2][3],
         ticker: this.channelToTicker[message[0]][1],
       };
-      //this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
+      this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
       this.addTransaction(trade);
     } else {
       console.log(message);
@@ -69,7 +83,9 @@ export class Bitfinex extends BaseExchange {
         if (message[1][0] instanceof Array) {
           //console.log(message)
           // Snapshot
-
+          if (!this.orderbook[ticker]) {
+            this.orderbook[ticker] = { SELL: [], BUY: [] };
+          }
           message[1].forEach((element: any) => {
             var book: OrderBookEntity = {
               id: "",
