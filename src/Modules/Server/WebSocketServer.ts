@@ -1,13 +1,12 @@
 import express from "express";
 import * as http from "http";
 import * as WebSocket from "ws";
-import Timer = NodeJS.Timer;
 import Logger from "../Utils/Logger";
 import { WebSocketMessage } from "../Types/WebSocketMessage";
 import { WebSocketCommands } from "../Enums/WebSocketCommands";
 import { WebSocketChannels } from "../Enums/WebSocketChannels";
+import { Exchanges } from "../Exchanges";
 
-let timer: Timer;
 
 export class WebSocketServer {
   private static wss: WebSocket.Server;
@@ -55,11 +54,19 @@ export class WebSocketServer {
       case "UNSUBSCRIBE":
         this.unsubscribe(sender, payload);
         break;
+      case "QUERY":
+        this.query(sender, payload);
+        break;
       default:
         break;
     }
   }
-  broadcast(channel: WebSocketChannels, params: any, filter: Function,source: string|null) {
+  broadcast(
+    channel: WebSocketChannels,
+    params: any,
+    filter: Function,
+    source: string | null
+  ) {
     for (let i = 0; i < Object.keys(this.subscribtions).length; i++) {
       const key = Object.keys(this.subscribtions)[i];
       if (
@@ -78,6 +85,14 @@ export class WebSocketServer {
     });
     this.logger.log(`User: ${ID} subscribed to channel: ${payload.channel}`);
   }
+  query(ID: string, payload: WebSocketMessage) {
+    const result = Exchanges.searchTickers(
+      payload.data.exchange,
+      payload.data.ticker
+    );
+    this.send(ID, WebSocketChannels.TICKERS, result);
+  }
+
   unsubscribe(ID: string, payload: WebSocketMessage) {}
   onConnect = () => {};
 

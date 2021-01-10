@@ -52,7 +52,7 @@ export class OHLCV {
           timeframe === sub.timeframe
         );
       },
-      this.exchangeName
+      `${this.exchangeName}:${ticker}`
     );
   }
 
