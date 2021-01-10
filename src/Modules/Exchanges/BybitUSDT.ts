@@ -6,14 +6,14 @@ import { OHLCVEntity } from "../Types/OHLCVEntity";
 import { TradeEntity } from "../Types/TradeEntity";
 import axios from "axios";
 
-export class Bybit extends BaseExchange {
+export class BybitUSDT extends BaseExchange {
   private nig = 0;
   private last_vol = 0;
   private last_open = 0;
   private last_dat = {};
   private futs: any = {};
   constructor() {
-    super(ExchangeType.WebSocket, "wss://stream.bybit.com/realtime", true);
+    super(ExchangeType.WebSocket, "wss://stream.bybit.com/realtime_public", true);
   }
   /*
   export type TradeEntity = {
@@ -137,7 +137,7 @@ export class Bybit extends BaseExchange {
     const { data } = await axios.get("https://api.bybit.com/v2/public/symbols");
 
     data.result.forEach((element: any) => {
-      if(!element.name.endsWith("USDT")){
+      if(element.name.endsWith("USDT")){
         this.tickers.push(element.name);
         this.send(
             JSON.stringify({ op: "subscribe", args: [`trade.${element.name}`] })
@@ -151,6 +151,7 @@ export class Bybit extends BaseExchange {
             )
       }
     });
+    console.log(this.tickers)
   }
 
   // LIMIT IS 200, SO MAKE SURE TO ONLY QUERY 200 BRUV
