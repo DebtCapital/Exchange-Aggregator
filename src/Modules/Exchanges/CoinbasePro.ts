@@ -8,7 +8,7 @@ export class CoinbasePro extends BaseExchange {
   constructor() {
     super(ExchangeType.WebSocket, "wss://ws-feed.pro.coinbase.com", true);
   }
-  subscribe(tickers: Array<string>) {
+  subscribe() {
     /*
     const message = {
       method: "SUBSCRIBE",
@@ -22,7 +22,7 @@ export class CoinbasePro extends BaseExchange {
         "channels": [
             {
                 "name": "matches",
-                "product_ids": tickers
+                "product_ids": this.tickers
             }
         ]
     }
@@ -32,13 +32,11 @@ export class CoinbasePro extends BaseExchange {
     const { data } = await axios.get(
         "https://api.pro.coinbase.com/products");
     
-    //console.log(data);
     var tickers: Array<string> = [];
     data.forEach((element:any) => {
-        tickers.push(element.id);
-        //console.log(element.id)
+        this.tickers.push(element.id);
     });
-    this.subscribe(tickers);
+    this.subscribe();
     
   }
   tradehandler(message: any){
