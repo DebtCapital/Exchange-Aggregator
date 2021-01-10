@@ -48,7 +48,7 @@ export class OHLCV {
       (sub: any) => {
         return (
           sub.ticker === ticker &&
-          sub.exchange === this.exchangeName &&
+          sub.exchange === this.exchangeName.toUpperCase() &&
           timeframe === sub.timeframe
         );
       },

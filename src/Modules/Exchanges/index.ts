@@ -19,7 +19,10 @@ class ExchangesAggregator {
       .map(({ exchangeName, tickers }) => {
         return { exchangeName: exchangeName.toUpperCase(), tickers };
       })
-      .filter(({ exchangeName }) => exchangeName === exchange || !exchange)
+      .filter(
+        ({ exchangeName }) =>
+          (exchange && exchangeName.includes(exchange)) || !exchange
+      )
       .map(({ exchangeName, tickers }) => {
         if (ticker) {
           tickers = tickers.filter((tick) => tick.includes(ticker));

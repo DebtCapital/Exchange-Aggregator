@@ -97,7 +97,13 @@ export class WebSocketServer {
     this.send(ID, WebSocketChannels.TICKERS, result, "QUERY_RESULT");
   }
 
-  unsubscribe(ID: string, payload: WebSocketMessage) {}
+  unsubscribe(ID: string, payload: WebSocketMessage) {
+    const index = this.connections[ID].list.findIndex(
+      (sub: WebSocketSubscription) => sub.channel === payload.channel
+    );
+    if (index == -1) return;
+    this.connections[ID].list.splice(index, 1);
+  }
 
   send(ID: string, channel: WebSocketChannels, data: any, source: string) {
     const payload: WebSocketPayload = {
