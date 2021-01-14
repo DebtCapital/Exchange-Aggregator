@@ -4,7 +4,7 @@
   "description": "Aggregate crypto exchange data ",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/index.ts"
+    "start": "ts-node src/index.ts --prof"
   },
   "author": "",
   "license": "ISC",

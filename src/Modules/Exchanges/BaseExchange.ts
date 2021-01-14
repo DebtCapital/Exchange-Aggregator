@@ -1,10 +1,13 @@
 import { ExchangeType } from "../Enums/ExchangeType";
 import WebSocket from "isomorphic-ws";
-import { OrderBook } from "../Types/OrderBook";
-import { OHLCVEntity } from "../Types/OHLCVEntity";
-import { TradeEntity } from "../Types/TradeEntity";
-import { OrderBookSide } from "../Types/OrderBookSide";
-import { OrderBookEntity } from "../Types/OrderBookEntity";
+import {
+  OrderBook,
+  OrderBookEntity,
+  OrderBookSide,
+  OHLCVEntity,
+  TradeEntity,
+} from "../Types";
+
 import Logger from "../Utils/Logger";
 import { Server as WebSocketServer } from "../Server";
 import { WebSocketChannels } from "../Enums/WebSocketChannels";
@@ -125,6 +128,5 @@ export abstract class BaseExchange {
           : "";
       console.log("\x1b[32m" + str1, "\x1b[31m" + str2, "\x1b[0m");
     }
-
   }
 }

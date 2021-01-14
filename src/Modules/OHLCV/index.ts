@@ -1,25 +1,47 @@
 import { OHLCVEntity } from "../Types/OHLCVEntity";
 import { TradeEntity } from "../Types/TradeEntity";
-import moment from "moment";
 import { Server as WebSocketServer } from "../Server";
 import { WebSocketChannels } from "../Enums/WebSocketChannels";
+// import //Logger from "../Utils///////////////Logger";
 export class OHLCV {
   private _trades: Array<TradeEntity> = [];
   private _latest: Record<string, Record<string, OHLCVEntity>> = {};
-  private timeframes: Array<number> = [1, 3, 30, 60];
+  private timeframes: Array<number> = [1, 3, 5, 15, 30, 60];
   private _candles: Record<string, Record<string, Array<OHLCVEntity>>> = {};
+  private toUpdate: Array<string> = [];
+  constructor(private exchangeName: string) {
+    setInterval(() => {
+      if (this.toUpdate.length !== 0) {
+        const start = new Date().getTime();
+        const pairs = Object.values(this.toUpdate)
+        const pairCount = pairs.length;
+        //////////////Logger.log(`Starting new loop for ${exchangeName}, updating the following ${pairCount} pairs: ${pairs} `);
+        for (const ticker of this.toUpdate) {
+          // //////////////Logger.log(`Building candle for ${ticker}`);
+          this.buildLatestCandles(ticker);
+          const index = this.toUpdate.indexOf(ticker);
+          this.toUpdate.splice(index, 1);
+        }
+        const finished = new Date().getTime();
 
-  constructor(private exchangeName: string) {}
+        // //////////////Logger.log(
+        //   `Finished all ${pairs} (${pairCount} pairs) for ${exchangeName} and it took: ${
+        //     finished - start
+        //   } ms`
+        // );
+      }
+    }, 100);
+  }
 
   private round(date: Date, duration: any) {
-    return moment(Math.floor(+date / +duration) * +duration)
-      .toDate()
-      .getTime();
+    return new Date(Math.floor(+date / +duration) * +duration).getTime();
   }
 
   public addTrade(trade: TradeEntity) {
     this._trades.push(trade);
-    this.buildLatestCandles(trade.ticker);
+    if (!this.toUpdate.includes(trade.ticker)) {
+      this.toUpdate.push(trade.ticker);
+    }
   }
 
   private ensureRecords(ticker: string, tf: number) {
@@ -55,25 +77,36 @@ export class OHLCV {
       `${this.exchangeName}:${ticker}`
     );
   }
-
+  private getTrades(
+    ticker: string,
+    from: number,
+    to: number
+  ): Array<TradeEntity> {
+    return this._trades
+      .reverse()
+      .filter(
+        (trade: TradeEntity) =>
+          trade.ticker === ticker &&
+          trade.timestamp > from &&
+          trade.timestamp < to
+      )
+      .reverse();
+  }
   private buildLatestCandles(ticker: string) {
+    const now = Math.ceil(new Date().getTime() / 1000) * 1000;
     for (const tf of this.timeframes) {
       this.ensureRecords(ticker, tf);
 
       const lastCandle = this.round(this.roundToSecond(), tf * 1000);
 
-      const tradeIndex = this._trades.findIndex(({ timestamp }) => {
-        return lastCandle <= timestamp;
-      });
+      const trades = this.getTrades(ticker, lastCandle, now);
 
-      if (tradeIndex == -1) continue;
+      if (trades.length === 0) continue;
 
-      const trades = this._trades.slice(tradeIndex, this._trades.length - 1);
-
-      const prices = trades
-        .filter((trade) => trade.ticker === ticker)
-        .map(({ price }) => price);
-      if (prices.length === 0) continue;
+      const prices = trades.map(({ price }) => price);
+      // ////////////Logger.log(
+      //   `Found: ${trades.length} trades for ${ticker} on ${this.exchangeName}`
+      // );
 
       const ohlcv: OHLCVEntity = {
         Open: Number(prices[0]),
@@ -84,10 +117,12 @@ export class OHLCV {
         Timestamp: lastCandle,
       };
       this.saveCandle(ohlcv, ticker, tf);
+      ////////////Logger.log(`Finished building candle for pair: ${ticker} on ${this.exchangeName} for timeframe: ${tf}`);
     }
   }
 
   private roundToSecond(timestamp: number = new Date().getTime()): Date {
-    return moment(timestamp).startOf("second").toDate();
+    const rounded = new Date(timestamp).getTime();
+    return new Date(rounded);
   }
 }

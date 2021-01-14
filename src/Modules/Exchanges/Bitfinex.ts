@@ -60,7 +60,7 @@ export class Bitfinex extends BaseExchange {
         price: message[2][3],
         ticker: this.channelToTicker[message[0]][1],
       };
-      this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
+      // this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
       this.addTransaction(trade);
     } else {
       console.log(message);
