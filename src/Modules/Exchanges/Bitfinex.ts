@@ -15,8 +15,8 @@ export class Bitfinex extends BaseExchange {
     // public api
     super(ExchangeType.WebSocket, "wss://api-pub.bitfinex.com/ws/2", true);
   }
-  subscribe() {
-    this.tickers.forEach(element => {
+  subscribe(nigs:Array<any>) {
+    nigs.forEach(element => {
       
     
       
@@ -46,9 +46,10 @@ export class Bitfinex extends BaseExchange {
         },
       }
     );
-    this.tickers = data.filter((element: Array<any>) => element[0].startsWith("t")).map((element: Array<any>) => element[0])
+    var ticks = data.filter((element: Array<any>) => element[0].startsWith("t")).map((element: Array<any>) => element[0])
+    this.tickers = ticks.map((element: any) => element.substr(1))
     console.log(this.tickers)
-    this.subscribe();
+    this.subscribe(ticks);
   }
   tradeHandler(message: any){
     if (message[1].includes("te") || message[1].includes("tu")) {

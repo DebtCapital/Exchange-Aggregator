@@ -74,7 +74,7 @@ export class Bybit extends BaseExchange {
         ticker,
         price: element.price,
       };
-      //this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
+      this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
       this.addTransaction(trade);
     });
   }
@@ -140,8 +140,8 @@ export class Bybit extends BaseExchange {
       if(!element.name.endsWith("USDT")){
         this.tickers.push(element.name);
         this.send(
-            JSON.stringify({ op: "subscribe", args: [`trade.${element.name}`] })
-            //JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
+            //JSON.stringify({ op: "subscribe", args: [`trade.${element.name}`] })
+            JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${element.name}`] })
             //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.${ticker}`] })
 
             // subs only to inverse atm
@@ -358,7 +358,8 @@ export class Bybit extends BaseExchange {
       });
       //this.aggregateOrderBook({ bids: Sell, asks: Buy }, 10);
     }
-    this.printBook(ticker);
+    //this.printBook(ticker);
+    this.updateBook(ticker);
     return [];
   }
 }

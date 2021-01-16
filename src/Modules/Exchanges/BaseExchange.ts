@@ -109,6 +109,21 @@ export abstract class BaseExchange {
     );
     this.ohlcvLedger.addTrade(trade);
   }
+
+  updateBook(ticker:string){
+    //console.log("updating", this.exchangeName, ticker);
+    var message = {buy: this.orderbook[ticker].BUY, sell: this.orderbook[ticker].SELL}
+    //console.log(message);
+    WebSocketServer.broadcast(
+      WebSocketChannels.BOOKS,
+      message,
+      (sub: any) => {
+        console.log(sub.pair == ticker ? "true": "false");
+        return sub.pair == ticker;
+      },
+      this.exchangeName
+    )
+  }
   printBook(ticker: string) {
     console.clear();
 
