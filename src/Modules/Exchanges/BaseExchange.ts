@@ -20,6 +20,8 @@ export abstract class BaseExchange {
   /// https://www.npmjs.com/package/websocket
 
   // {"op": "subscribe", "args": ["orderBookL2_200"]} <- bybit
+  public last_ping = 0;
+  public last_ping_response = 0;
   private connection;
   public tickers: Array<string> = [];
   public orderbook: Record<string, OrderBook> = {};
