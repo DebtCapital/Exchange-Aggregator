@@ -23,7 +23,7 @@ export class WebSocketServer {
     // initialize the WebSocket server instance
     WebSocketServer.wss = new WebSocket.Server({ server });
     // start our server
-    server.listen(process.env.PORT || 3000, this.onServerStart);
+    server.listen(process.env.PORT || 4000, this.onServerStart);
     WebSocketServer.wss.on("connection", this.onConnection);
   }
   getKey(req: http.IncomingMessage): string {

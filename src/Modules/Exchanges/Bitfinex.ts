@@ -64,7 +64,12 @@ export class Bitfinex extends BaseExchange {
       // this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
       this.addTransaction(trade);
     } else {
-      console.log(message);
+      if(message[1] == 'hb'){
+        //console.log("sending", message)
+        this.send(message)
+        return;
+      }
+      //console.log(message);
       message[1].forEach((element: any) => {
         // new trade
         var trade: TradeEntity = {
@@ -79,61 +84,61 @@ export class Bitfinex extends BaseExchange {
     }
   }
   BookHandler(message:any){
-    const precision = 10;
-        const ticker = this.channelToTicker[message[0]][1];
-        if (message[1][0] instanceof Array) {
-          //console.log(message)
-          // Snapshot
-          if (!this.orderbook[ticker]) {
-            this.orderbook[ticker] = { SELL: [], BUY: [] };
-          }
-          message[1].forEach((element: any) => {
-            var book: OrderBookEntity = {
-              id: "",
-              startPrice: element[0],
-              endPrice: element[0] + precision,
-              size: element[2] > 0 ? element[2] : element[2] * -1,
-            };
-            this.orderbook[ticker][element[2] > 0 ? "BUY" : "SELL"].push(book);
-          });
+    const precision = 100;
+    const ticker = this.channelToTicker[message[0]][1];
+    if (message[1][0] instanceof Array) {
+      //console.log(message)
+      // Snapshot
+      if (!this.orderbook[ticker]) {
+        this.orderbook[ticker] = { SELL: [], BUY: [] };
+      }
+      message[1].forEach((element: any) => {
+        var book: OrderBookEntity = {
+          id: "",
+          startPrice: element[0],
+          endPrice: element[0] + precision,
+          size: element[2] > 0 ? element[2] : element[2] * -1,
+        };
+        this.orderbook[ticker][element[2] > 0 ? "BUY" : "SELL"].push(book);
+      });
+    } else {
+      // updates
+      var idx = this.orderbook[ticker][
+        message[1][2] > 0 ? "BUY" : "SELL"
+      ].findIndex(
+        (orderbookElement: OrderBookEntity) =>
+          orderbookElement.startPrice == message[1][0]
+      );
+      if (message[1][1] > 0) {
+        if (idx == -1) {
+          //console.log(`DUMB NIGGER ALERT DUMB NIGGER ALERT ${message}`);
+          // we need to insert a new entry
+          var book: OrderBookEntity = {
+            id: "",
+            startPrice: message[1][0],
+            endPrice: message[1][0] + precision,
+            size: message[1][2] > 0 ? message[1][2] : message[1][2] * -1,
+          };
+          this.orderbook[ticker][message[1][2] > 0 ? "BUY" : "SELL"].push(book);
         } else {
-          // updates
-          var idx = this.orderbook[ticker][
-            message[1][2] > 0 ? "BUY" : "SELL"
-          ].findIndex(
-            (orderbookElement: OrderBookEntity) =>
-              orderbookElement.startPrice == message[1][0]
-          );
-          if (message[1][1] > 0) {
-            if (idx == -1) {
-              //console.log(`DUMB NIGGER ALERT DUMB NIGGER ALERT ${message}`);
-              // we need to insert a new entry
-              var book: OrderBookEntity = {
-                id: "",
-                startPrice: message[1][0],
-                endPrice: message[1][0] + precision,
-                size: message[1][2] > 0 ? message[1][2] : message[1][2] * -1,
-              };
-              this.orderbook[ticker][message[1][2] > 0 ? "BUY" : "SELL"].push(book);
-            } else {
-              if (idx != -1) {
-                this.orderbook[ticker][message[1][2] > 0 ? "BUY" : "SELL"][idx].size =
-                  message[1][2] > 0 ? message[1][2] : message[1][2] * -1;
-              } else {
-                console.log("NIGGER");
-              }
-            }
+          if (idx != -1) {
+            this.orderbook[ticker][message[1][2] > 0 ? "BUY" : "SELL"][idx].size =
+              message[1][2] > 0 ? message[1][2] : message[1][2] * -1;
           } else {
-            this.orderbook[ticker][message[1][2] > 0 ? "BUY" : "SELL"].splice(idx, 1);
+            console.log("NIGGER");
           }
-          //console.log(message);
         }
-        this.printBook(ticker);
+      } else {
+        this.orderbook[ticker][message[1][2] > 0 ? "BUY" : "SELL"].splice(idx, 1);
+      }
+      //console.log(message);
+    }
+    this.updateBook(ticker)
   }
   onMessage(message: any) {
     //console.log(typeof message, message);
     if (!(message instanceof Array)) {
-      console.log(message);
+      //console.log(message);
       this.channelToTicker[message.chanId] = [
         message.symbol,
         message.pair,

@@ -20,6 +20,7 @@ export abstract class BaseExchange {
   /// https://www.npmjs.com/package/websocket
 
   // {"op": "subscribe", "args": ["orderBookL2_200"]} <- bybit
+  public last_update = new Date().getTime();
   public last_ping = 0;
   public last_ping_response = 0;
   private connection;
@@ -43,6 +44,17 @@ export abstract class BaseExchange {
       this.connection.onclose = this._onDisconnect;
     }
   }
+  init(){
+    this.logger.log("Initializing...");
+    if (this.type === ExchangeType.WebSocket) {
+      this.connection = new WebSocket(this.url);
+      this.connection.onopen = this._onConnected;
+      this.connection.onmessage = this._onMessage;
+      this.connection.onclose = this._onDisconnect;
+    }
+  }
+
+  //abstract onPing(nig: WebSocket, nog: string): void;
   aggregateOrderBookSide(
     orderbookSide: OrderBookSide,
     precision: number,
@@ -78,7 +90,9 @@ export abstract class BaseExchange {
   abstract onConnected(): void;
 
   _onDisconnect = () => {
-    this.logger.error("Connection lost");
+    
+    this.logger.error("Connection lost, reconnecting");
+    this.init();
   };
   _onConnected = () => {
     this.logger.success("Connected to: " + this.url);
@@ -92,8 +106,16 @@ export abstract class BaseExchange {
 
   send(payload: string) {
     if (!this.connection) throw new Error("Can't send without connection!");
-    const message = JSON.stringify(JSON.parse(payload), null, 4);
-    this.logger.log(`Received a message: \n${message}`);
+    var message = ""
+
+    try{
+      message = JSON.stringify(JSON.parse(payload), null, 4);
+    }
+    catch(e){
+      message = JSON.stringify((payload), null, 4);
+    }
+    
+    //this.logger.log(`Received a message: \n${message}`);
     this.connection.send(payload);
   }
   get exchangeName(): string {
@@ -112,19 +134,20 @@ export abstract class BaseExchange {
     this.ohlcvLedger.addTrade(trade);
   }
 
-  updateBook(ticker:string){
-    //console.log("updating", this.exchangeName, ticker);
-    var message = {buy: this.orderbook[ticker].BUY, sell: this.orderbook[ticker].SELL}
-    //console.log(message);
-    WebSocketServer.broadcast(
-      WebSocketChannels.BOOKS,
-      message,
-      (sub: any) => {
-        console.log(sub.pair == ticker ? "true": "false");
-        return sub.pair == ticker;
-      },
-      this.exchangeName
-    )
+  updateBook(ticker:string, precision = 100){
+    // time 
+    if(this.last_update+100 < new Date().getTime()){
+      //var message = {buy: this.orderbook[ticker].BUY, sell: this.orderbook[ticker].SELL}
+      var message = this.aggregateOrderBook({ asks: this.orderbook[ticker].BUY, bids: this.orderbook[ticker].SELL }, precision)
+      WebSocketServer.broadcast(
+        WebSocketChannels.BOOKS,
+        message,
+        (sub: any) => {
+          return sub.pair == ticker;
+        },
+        this.exchangeName
+      )
+    }
   }
   printBook(ticker: string) {
     console.clear();

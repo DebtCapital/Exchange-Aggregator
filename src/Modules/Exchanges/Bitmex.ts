@@ -5,6 +5,7 @@ import { BaseExchange } from "./BaseExchange";
 import axios from "axios";
 
 export class Bitmex extends BaseExchange {
+
   constructor() {
     super(ExchangeType.WebSocket, "wss://www.bitmex.com/realtime", true);
   }
@@ -63,7 +64,7 @@ export class Bitmex extends BaseExchange {
 
     }
   }
-
+  
   
   
 }

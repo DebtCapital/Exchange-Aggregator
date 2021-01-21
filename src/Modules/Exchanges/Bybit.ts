@@ -74,7 +74,7 @@ export class Bybit extends BaseExchange {
         ticker,
         price: element.price,
       };
-      this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
+      //this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
       this.addTransaction(trade);
     });
   }
@@ -139,6 +139,7 @@ export class Bybit extends BaseExchange {
     data.result.forEach((element: any) => {
       if(!element.name.endsWith("USDT")){
         this.tickers.push(element.name);
+        this.send(JSON.stringify({ op: "subscribe", args: [`trade.${element.name}`] }))
         this.send(
             //JSON.stringify({ op: "subscribe", args: [`trade.${element.name}`] })
             JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${element.name}`] })
@@ -152,7 +153,10 @@ export class Bybit extends BaseExchange {
       }
     });
   }
+  // onPing(nig: WebSocket, nog: string){
+    
 
+  // }
   // LIMIT IS 200, SO MAKE SURE TO ONLY QUERY 200 BRUV
   public async historicalKline(from: Number, ticker: any, interval: any) {
     console.log(from);
@@ -192,6 +196,7 @@ export class Bybit extends BaseExchange {
     }
 
     //console.log(topic);
+    //this.send('{"op":"ping"}');
     switch (topic) {
       // PUBLIC TOPICS RELEVANT TO US
 
