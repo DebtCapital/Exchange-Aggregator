@@ -25,16 +25,18 @@ export class Bitfinex extends BaseExchange {
         channel: "trades",
         symbol: element
       };
-/*
-      const message = {
+
+      this.send(JSON.stringify(message));
+      
+      const message2 = {
         event: "subscribe",
         channel: "book",
         symbol: element,
         prec: "P1",
         freq: "F0",
         len: 1,
-      };*/
-      this.send(JSON.stringify(message));
+      };
+      this.send(JSON.stringify(message2));
     }); 
   }
   async onConnected() {
