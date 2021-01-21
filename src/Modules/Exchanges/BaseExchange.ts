@@ -134,16 +134,17 @@ export abstract class BaseExchange {
     this.ohlcvLedger.addTrade(trade);
   }
 
-  updateBook(ticker:string, precision = 100){
+  updateBook(ticker:string, precision = 10){
     // time 
-    if(this.last_update+100 < new Date().getTime()){
+    if(this.last_update+500 < new Date().getTime()){
+      //this.last_update = new Date().getTime();
       //var message = {buy: this.orderbook[ticker].BUY, sell: this.orderbook[ticker].SELL}
       var message = this.aggregateOrderBook({ asks: this.orderbook[ticker].BUY, bids: this.orderbook[ticker].SELL }, precision)
       WebSocketServer.broadcast(
         WebSocketChannels.BOOKS,
         message,
         (sub: any) => {
-          return sub.pair == ticker;
+          return sub.pair == ticker && sub.exchange == this.exchangeName.toUpperCase();
         },
         this.exchangeName
       )
