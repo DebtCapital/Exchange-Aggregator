@@ -9,6 +9,7 @@ import {
 } from "../Types";
 
 import Logger from "../Utils/Logger";
+import ReconnectingWebSocket, {WSEventName, WebSocketMessageEvent} from '../Utils/reconnecting_websocket';
 import { Server as WebSocketServer } from "../Server";
 import { WebSocketChannels } from "../Enums/WebSocketChannels";
 import { OHLCV } from "../OHLCV";
@@ -38,21 +39,14 @@ export abstract class BaseExchange {
   ) {
     this.logger.log("Initializing...");
     if (this.type === ExchangeType.WebSocket) {
-      this.connection = new WebSocket(url);
-      this.connection.onopen = this._onConnected;
-      this.connection.onmessage = this._onMessage;
-      this.connection.onclose = this._onDisconnect;
+      this.connection = new ReconnectingWebSocket({url});
+      this.connection.on(WSEventName.OPENED, this._onConnected)
+      this.connection.on(WSEventName.MESSAGE, this._onMessage);
+      this.connection.on(WSEventName.CLOSED, this._onDisconnect);
+      this.connection.connect();
     }
   }
-  init(){
-    this.logger.log("Initializing...");
-    if (this.type === ExchangeType.WebSocket) {
-      this.connection = new WebSocket(this.url);
-      this.connection.onopen = this._onConnected;
-      this.connection.onmessage = this._onMessage;
-      this.connection.onclose = this._onDisconnect;
-    }
-  }
+
 
   //abstract onPing(nig: WebSocket, nog: string): void;
   aggregateOrderBookSide(
@@ -92,14 +86,13 @@ export abstract class BaseExchange {
   _onDisconnect = () => {
     
     this.logger.error("Connection lost, reconnecting");
-    this.init();
   };
   _onConnected = () => {
     this.logger.success("Connected to: " + this.url);
     this.onConnected();
   };
 
-  _onMessage = (payload: WebSocket.MessageEvent): void => {
+  _onMessage = (payload: WebSocketMessageEvent): void => {
     this.onMessage(JSON.parse(payload.data.toString()));
   };
   abstract onMessage(message: object): void;
