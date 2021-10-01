@@ -54,7 +54,6 @@ export class BybitUSDT extends BaseExchange {
           this.futs.open_interest = element.open_interest;
         const after = Object.values(this.futs).join("");
         if (after != before) {
-          // NIGGA IT CHANGED AAAAAAAAAAAAAAAAAAA
           this.logger.log(this.futs, "FUTS");
         }
       });
@@ -80,7 +79,7 @@ export class BybitUSDT extends BaseExchange {
   }
 
   private tickManager(data: any, vol: number) {
-    var nig: OHLCVEntity = {
+    var tik: OHLCVEntity = {
       Open: data.open,
       High: data.high,
       Low: data.low,
@@ -89,11 +88,11 @@ export class BybitUSDT extends BaseExchange {
       Timestamp: data.timestamp,
     };
     // do whatever you like with the ticks
-    //console.log("tick: ", nig)
+    //console.log("tick: ", tik)
   }
   private ohlcvManager(data: any) {
     //console.log(data)
-    var nig: OHLCVEntity = {
+    var tik: OHLCVEntity = {
       Open: data.open,
       High: data.high,
       Low: data.low,
@@ -245,7 +244,7 @@ export class BybitUSDT extends BaseExchange {
       default: {
         if (!data.success) {
           console.log(topic, data);
-          console.log("fuck yo ass nigga, somethin gay came here");
+          console.log("failed sth");
         }
       }
     }
@@ -283,7 +282,7 @@ export class BybitUSDT extends BaseExchange {
         );
 
         if (idx == -1) {
-          console.log(`DUMB NIGGER ALERT DUMB NIGGER ALERT ${Math.random()}`);
+          console.log(`Something went really wrong in BybitUSDT orderbook ${Math.random()}`);
         } else {
           //console.log(idx, this.orderbook[delete_element.side ? "BUY" : "SELL"].length, delete_element.side)
           this.orderbook[ticker][delete_element.side == "Buy" ? "BUY" : "SELL"][
