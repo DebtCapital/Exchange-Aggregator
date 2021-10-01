@@ -242,7 +242,6 @@ export class Bybit extends BaseExchange {
       default: {
         if (!data.success) {
           console.log(topic, data);
-          console.log("fuck yo ass nigga, somethin gay came here");
         }
       }
     }
