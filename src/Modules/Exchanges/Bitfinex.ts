@@ -1,5 +1,3 @@
-// :)) lemme do this one nig nog pls
-
 import { ExchangeType } from "../Enums/ExchangeType";
 import { TradeType } from "../Enums/TradeType";
 import { OrderBookEntity } from "../Types/OrderBookEntity";
@@ -17,9 +15,6 @@ export class Bitfinex extends BaseExchange {
   }
   subscribe(nigs:Array<any>) {
     nigs.forEach(element => {
-      
-    
-      
       const message = {
         event: "subscribe",
         channel: "trades",
@@ -63,7 +58,6 @@ export class Bitfinex extends BaseExchange {
         price: message[2][3],
         ticker: this.channelToTicker[message[0]][1],
       };
-      // this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
       this.addTransaction(trade);
     } else {
       if(message[1] == 'hb'){
@@ -71,7 +65,6 @@ export class Bitfinex extends BaseExchange {
         this.send(message)
         return;
       }
-      //console.log(message);
       message[1].forEach((element: any) => {
         // new trade
         var trade: TradeEntity = {
@@ -89,7 +82,6 @@ export class Bitfinex extends BaseExchange {
     const precision = 100;
     const ticker = this.channelToTicker[message[0]][1];
     if (message[1][0] instanceof Array) {
-      //console.log(message)
       // Snapshot
       if (!this.orderbook[ticker]) {
         this.orderbook[ticker] = { SELL: [], BUY: [] };
@@ -113,7 +105,6 @@ export class Bitfinex extends BaseExchange {
       );
       if (message[1][1] > 0) {
         if (idx == -1) {
-          //console.log(`DUMB NIGGER ALERT DUMB NIGGER ALERT ${message}`);
           // we need to insert a new entry
           var book: OrderBookEntity = {
             id: "",
@@ -127,7 +118,7 @@ export class Bitfinex extends BaseExchange {
             this.orderbook[ticker][message[1][2] > 0 ? "BUY" : "SELL"][idx].size =
               message[1][2] > 0 ? message[1][2] : message[1][2] * -1;
           } else {
-            console.log("NIGGER");
+            console.log("Something went horribly wrong in the Finex orderbook");
           }
         }
       } else {
@@ -148,7 +139,6 @@ export class Bitfinex extends BaseExchange {
       ];
       return;
     }
-    //console.log(this.channelToTicker[message[0]][2])
     switch (this.channelToTicker[message[0]][2]) {
       case "trades": {
         this.tradeHandler(message);
