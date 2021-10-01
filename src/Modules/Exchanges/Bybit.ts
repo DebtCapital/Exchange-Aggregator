@@ -23,9 +23,11 @@ export class Bybit extends BaseExchange {
   };
   
   */
-
+  
+  // oi, funding, predicted funding, funding time, countdown to funding
   private instrumentInfoHandler(data: any, ticker: string) {
-    // oi, funding, predicted funding, funding time, countdown to funding
+    
+    
     // first message
     if (data.data.funding_rate_e6) {
       this.futs = {
@@ -35,11 +37,9 @@ export class Bybit extends BaseExchange {
         open_interest: data.data.open_interest,
         countdown_hour: data.data.countdown_hour,
       };
-      //console.log(this.futs)
     }
     //updates
     else {
-      //console.log(data.data)
       data.data.update.forEach((element: any) => {
         const before = Object.values(this.futs).join("");
         if (element.funding_rate_e6)
@@ -54,11 +54,9 @@ export class Bybit extends BaseExchange {
           this.futs.open_interest = element.open_interest;
         const after = Object.values(this.futs).join("");
         if (after != before) {
-          // NIGGA IT CHANGED AAAAAAAAAAAAAAAAAAA
           this.logger.log(this.futs, "FUTS");
         }
       });
-      //console.log(this.futs)
     }
   }
 
@@ -80,7 +78,7 @@ export class Bybit extends BaseExchange {
   }
 
   private tickManager(data: any, vol: number) {
-    var nig: OHLCVEntity = {
+    var tik: OHLCVEntity = {
       Open: data.open,
       High: data.high,
       Low: data.low,
@@ -89,11 +87,11 @@ export class Bybit extends BaseExchange {
       Timestamp: data.timestamp,
     };
     // do whatever you like with the ticks
-    //console.log("tick: ", nig)
+    //console.log("tick: ", tik)
   }
   private ohlcvManager(data: any) {
     //console.log(data)
-    var nig: OHLCVEntity = {
+    var tik: OHLCVEntity = {
       Open: data.open,
       High: data.high,
       Low: data.low,
@@ -110,7 +108,7 @@ export class Bybit extends BaseExchange {
       if (this.tick) {
         //console.log("price changed by: ",element.close - this.nig)
 
-        // all of this is needed to get volume PER TICK
+        // all of this is needed to get volume per tick
         var volume = 0;
         if (this.last_open != element.open) {
           this.last_vol = element.volume;
@@ -149,14 +147,10 @@ export class Bybit extends BaseExchange {
             //'{"op": "subscribe", "args": ["trade.BTCUSDT"]}'
             // JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
                     
-            )
+        )
       }
     });
   }
-  // onPing(nig: WebSocket, nog: string){
-    
-
-  // }
   // LIMIT IS 200, SO MAKE SURE TO ONLY QUERY 200 BRUV
   public async historicalKline(from: Number, ticker: any, interval: any) {
     console.log(from);
@@ -181,7 +175,6 @@ export class Bybit extends BaseExchange {
         element.volume
       );
     });
-    //console.log( data.result)
   }
   public onMessage(data: any) {
     var topic = data.topic;
@@ -268,6 +261,8 @@ export class Bybit extends BaseExchange {
     29230.0 -> 29240.0  3,363,306.0
     29240.0 -> 29243.5  3,260,962.0
  */
+  
+  // Handle OB message
   private OrderbookHandler(data: any, ticker: string): Array<any> {
     const Sell: any[] = [];
     const Buy: any[] = [];
@@ -287,7 +282,7 @@ export class Bybit extends BaseExchange {
         );
 
         if (idx == -1) {
-          console.log(`DUMB NIGGER ALERT DUMB NIGGER ALERT ${Math.random()}`);
+          console.log(`Something went really wrong bybit.ts ${Math.random()}`);
         } else {
           //console.log(idx, this.orderbook[delete_element.side ? "BUY" : "SELL"].length, delete_element.side)
           this.orderbook[ticker][delete_element.side == "Buy" ? "BUY" : "SELL"][
@@ -299,7 +294,6 @@ export class Bybit extends BaseExchange {
         }
       });
       data.data.insert.forEach((insert_element: any) => {
-        //console.log("INSERT")
         var idx = this.orderbook[ticker][
           insert_element.side == "Buy" ? "BUY" : "SELL"
         ].findIndex(
@@ -310,7 +304,6 @@ export class Bybit extends BaseExchange {
         if (idx == -1) {
           //console.log(delete_element)
           //console.log(this.orderbook)
-          //console.log(`DUMB INSERT ALERT DUMB INSERT ALERT ${Math.random()}`)
           this.orderbook[ticker][
             insert_element.side == "Buy" ? "BUY" : "SELL"
           ].push({
