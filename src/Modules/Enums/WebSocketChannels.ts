@@ -3,4 +3,5 @@ export enum WebSocketChannels {
   BOOKS = "BOOKS",
   OHLCV = "OHLCV",
   TICKERS = "TICKERS",
+  LIQUIDATIONS = "LIQUIDATIONS",
 }

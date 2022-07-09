@@ -1,6 +1,7 @@
 import { ExchangeType } from "../Enums/ExchangeType";
 import { TradeType } from "../Enums/TradeType";
 import { TradeEntity } from "../Types/TradeEntity";
+import { LiquidationEntity } from "../Types/LiquidationEntity";
 import { BaseExchange } from "./BaseExchange";
 import axios from "axios";
 
@@ -62,7 +63,15 @@ export class BinanceFutures extends BaseExchange {
         // this.logger.log(JSON.stringify(trade), "Trade");
         this.addTransaction(trade);
       }
-      case "depthUpdate": {
+      case "forceOrder": {
+          const liq: LiquidationEntity = {
+              side: message.S,
+              ticker: message.s,
+              price: parseFloat(message.p),
+              size: parseFloat(message.q),
+              timestamp: message.T
+          }
+          this.liquidation(liq);
       }
     }
   }

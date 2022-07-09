@@ -45,7 +45,7 @@ export class Bitfinex extends BaseExchange {
     );
     var ticks = data.filter((element: Array<any>) => element[0].startsWith("t")).map((element: Array<any>) => element[0])
     this.tickers = ticks.map((element: any) => element.substr(1))
-    console.log(this.tickers)
+    // console.log(this.tickers)
     this.subscribe(ticks);
   }
   tradeHandler(message: any){

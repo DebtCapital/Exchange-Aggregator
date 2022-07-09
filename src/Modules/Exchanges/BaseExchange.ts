@@ -6,6 +6,7 @@ import {
   OrderBookSide,
   OHLCVEntity,
   TradeEntity,
+  LiquidationEntity
 } from "../Types";
 
 import Logger from "../Utils/Logger";
@@ -27,6 +28,8 @@ export abstract class BaseExchange {
   public orderbook: Record<string, OrderBook> = {};
   public ohlcv: Array<OHLCVEntity> = [];
   public trades: Array<TradeEntity> = [];
+  public liquidations: Array<LiquidationEntity> = [];
+
   public logger = new Logger(this.exchangeName);
   private ohlcvLedger = new OHLCV(this.exchangeName);
 
@@ -130,7 +133,17 @@ export abstract class BaseExchange {
     );
     this.ohlcvLedger.addTrade(trade);
   }
-
+  liquidation(liq: LiquidationEntity) {
+    this.liquidations.push(liq);
+    WebSocketServer.broadcast(
+      WebSocketChannels.LIQUIDATIONS,
+      liq,
+      (sub: any) => {
+        return sub.pair === liq.ticker;
+      },
+      this.exchangeName
+    );
+  }
   updateBook(ticker:string, precision = 10){
     // time 
     if(this.last_update+500 < new Date().getTime()){
