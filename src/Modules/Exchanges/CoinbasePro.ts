@@ -43,6 +43,7 @@ export class CoinbasePro extends BaseExchange {
       size: message.size,
       price: message.price,
       ticker: message.product_id,
+      side: message.side
     };
     // this.logger.log(JSON.stringify(trade), "Trade", trade.timestamp)
     this.addTransaction(trade);

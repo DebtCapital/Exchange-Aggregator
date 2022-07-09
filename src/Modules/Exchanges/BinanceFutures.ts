@@ -54,24 +54,28 @@ export class BinanceFutures extends BaseExchange {
     // console.log(message)
     switch (message.e) {
       case "aggTrade": {
+        
         const trade: TradeEntity = {
           timestamp: message.T,
           price: message.p,
           size: message.q,
           ticker: message.s,
+          side: "none"
         };
         // this.logger.log(JSON.stringify(trade), "Trade");
         this.addTransaction(trade);
+        break;
       }
       case "forceOrder": {
           const liq: LiquidationEntity = {
-              side: message.S,
+              side: message.S.toLowerCase(),
               ticker: message.s,
               price: parseFloat(message.p),
               size: parseFloat(message.q),
               timestamp: message.T
           }
           this.liquidation(liq);
+          break;
       }
     }
   }

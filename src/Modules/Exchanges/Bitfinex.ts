@@ -43,7 +43,7 @@ export class Bitfinex extends BaseExchange {
         },
       }
     );
-    var ticks = data.filter((element: Array<any>) => element[0].startsWith("t")).map((element: Array<any>) => element[0])
+    var ticks = data.filter((element: Array<any>) => element[0].startsWith("t")).filter((a:any) => a[8] * a[1] > 20000000).map((element: Array<any>) => element[0])
     this.tickers = ticks.map((element: any) => element.substr(1))
     // console.log(this.tickers)
     this.subscribe(ticks);
@@ -51,12 +51,18 @@ export class Bitfinex extends BaseExchange {
   tradeHandler(message: any){
     if (message[1].includes("te") || message[1].includes("tu")) {
       //update
-      //console.log("data: ",message)
+      var side = "";
+      if (message[2][2] > 0) {
+        side = "buy";
+      } else {
+        side = "sell";
+      }
       var trade: TradeEntity = {
-        size: message[2][2],
+        size: Math.abs(message[2][2]),
         timestamp: message[2][1],
         price: message[2][3],
         ticker: this.channelToTicker[message[0]][1],
+        side:  side
       };
       this.addTransaction(trade);
     } else {
@@ -67,11 +73,18 @@ export class Bitfinex extends BaseExchange {
       }
       message[1].forEach((element: any) => {
         // new trade
+        var side = "";
+        if (element[2] > 0) {
+          side = "buy";
+        } else {
+          side = "sell";
+        }
         var trade: TradeEntity = {
-          size: element[2],
+          size: Math.abs(element[2]),
           timestamp: element[1],
           price: element[3],
           ticker: this.channelToTicker[message[0]][1],
+          side,
         };
 
         this.addTransaction(trade);
@@ -132,6 +145,10 @@ export class Bitfinex extends BaseExchange {
     //console.log(typeof message, message);
     if (!(message instanceof Array)) {
       //console.log(message);
+      if (message.chanId == undefined) {
+        console.log(message)
+        return;
+      }
       this.channelToTicker[message.chanId] = [
         message.symbol,
         message.pair,
@@ -140,6 +157,7 @@ export class Bitfinex extends BaseExchange {
       return;
     }
     // console.log(message[0], this.channelToTicker)
+    console.log(this.channelToTicker, message[0])
     switch (this.channelToTicker[message[0]][2]) {
       case "trades": {
         this.tradeHandler(message);

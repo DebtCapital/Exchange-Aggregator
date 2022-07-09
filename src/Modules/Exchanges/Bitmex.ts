@@ -43,7 +43,8 @@ export class Bitmex extends BaseExchange {
             timestamp: Date.parse(element.timestamp),
             ticker: element.symbol,
             size:element.size,
-            price:element.price
+            price:element.price,
+            side:element.side.toLowerCase()
         };
         //this.logger.log(JSON.stringify(trade), "Trade", trade.timestamp)
         this.addTransaction(trade);

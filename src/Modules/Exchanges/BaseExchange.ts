@@ -23,12 +23,14 @@ export abstract class BaseExchange {
 
   // {"op": "subscribe", "args": ["orderBookL2_200"]} <- bybit
   public last_update = new Date().getTime();
-  private connection;
+  private connection: any;
   public tickers: Array<string> = [];
   public orderbook: Record<string, OrderBook> = {};
   public ohlcv: Array<OHLCVEntity> = [];
   public trades: Array<TradeEntity> = [];
   public liquidations: Array<LiquidationEntity> = [];
+
+  private last_disconnect: number = Date.now();
 
   public logger = new Logger(this.exchangeName);
   private ohlcvLedger = new OHLCV(this.exchangeName);
@@ -40,6 +42,20 @@ export abstract class BaseExchange {
     private heartbeatPingMessage: string | (() => void),
     private heartbeatInterval: number,
     private heartbeat: boolean
+  ) {
+    this.createConn(type, url, tick, heartbeatPingMessage, heartbeatInterval, heartbeat);
+  }
+
+  deleteConn() {
+    this.connection.disconnect(); 
+  }
+  createConn(
+     type: ExchangeType,
+     url: string,
+     tick: boolean,
+     heartbeatPingMessage: string | (() => void),
+     heartbeatInterval: number,
+     heartbeat: boolean
   ) {
     this.logger.log("Initializing...");
     if (this.type === ExchangeType.WebSocket) {
@@ -53,7 +69,6 @@ export abstract class BaseExchange {
       this.connection.connect();
     }
   }
-
 
   //abstract onPing(nig: WebSocket, nog: string): void;
   aggregateOrderBookSide(
@@ -117,9 +132,18 @@ export abstract class BaseExchange {
     
     //this.logger.log(`Received a message: \n${message}`);
     this.connection.send(payload);
+    this.checkReset();
   }
   get exchangeName(): string {
     return this.constructor.name;
+  }
+
+  checkReset() {
+    if (this.last_disconnect + 24 * 60 * 60 * 1000 < Date.now()) {
+      this.last_disconnect = Date.now();
+      this.deleteConn();
+      this.createConn(this.type, this.url, this.tick, this.heartbeatPingMessage, this.heartbeatInterval, this.heartbeat);
+    }
   }
   addTransaction(trade: TradeEntity) {
     this.trades.push(trade);
@@ -132,6 +156,7 @@ export abstract class BaseExchange {
       this.exchangeName
     );
     this.ohlcvLedger.addTrade(trade);
+    this.checkReset();
   }
   liquidation(liq: LiquidationEntity) {
     this.liquidations.push(liq);

@@ -58,9 +58,11 @@ export class Binance extends BaseExchange {
           price: message.p,
           size: message.q,
           ticker: message.s,
+          side: message.S.toLowerCase()
         };
         // this.logger.log(JSON.stringify(trade), "Trade");
         this.addTransaction(trade);
+        break;
       }
       case "depthUpdate": {
       }

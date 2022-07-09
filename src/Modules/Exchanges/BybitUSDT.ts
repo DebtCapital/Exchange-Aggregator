@@ -72,6 +72,7 @@ export class BybitUSDT extends BaseExchange {
         timestamp: element.trade_time_ms,
         ticker,
         price: element.price,
+        side: element.side
       };
       //this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
       this.addTransaction(trade);
@@ -133,21 +134,25 @@ export class BybitUSDT extends BaseExchange {
   }
 
   async onConnected() {
-    const { data } = await axios.get("https://api.bybit.com/v2/public/symbols");
+    const { data } = await axios.get("https://api.bybit.com/v2/public/tickers");
 
     data.result.forEach((element: any) => {
-      if(element.name.endsWith("USDT")){
-        this.tickers.push(element.name);
-        this.send(
-            JSON.stringify({ op: "subscribe", args: [`trade.${element.name}`] })
-            //JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
-            //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.${ticker}`] })
+      // console.log(element.volume_24h, parseFloat(element.last_price))
+      if (element.volume_24h * parseFloat(element.last_price) > 20000000)
+      {
+        if(element.symbol.endsWith("USDT")){
+          this.tickers.push(element.symbol);
+          this.send(
+              JSON.stringify({ op: "subscribe", args: [`trade.${element.symbol}`] })
+              //JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${ticker}`] })
+              //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.${ticker}`] })
 
-            // subs only to inverse atm
-            //'{"op": "subscribe", "args": ["trade.BTCUSDT"]}'
-            // JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
-                    
-            )
+              // subs only to inverse atm
+              //'{"op": "subscribe", "args": ["trade.BTCUSDT"]}'
+              // JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
+                      
+              )
+        }
       }
     });
     console.log(this.tickers)

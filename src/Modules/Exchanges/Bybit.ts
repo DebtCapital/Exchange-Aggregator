@@ -5,6 +5,7 @@ import { OrderBookSide } from "../Types/OrderBookSide";
 import { OHLCVEntity } from "../Types/OHLCVEntity";
 import { TradeEntity } from "../Types/TradeEntity";
 import axios from "axios";
+import { LiquidationEntity } from "../Types";
 
 export class Bybit extends BaseExchange {
   private nig = 0;
@@ -71,6 +72,7 @@ export class Bybit extends BaseExchange {
         timestamp: element.trade_time_ms,
         ticker,
         price: element.price,
+        side: element.side.toLowerCase()
       };
       //this.logger.log(JSON.stringify(trade,null,4),"Trade", trade.timestamp)
       this.addTransaction(trade);
@@ -132,24 +134,18 @@ export class Bybit extends BaseExchange {
   }
 
   async onConnected() {
-    const { data } = await axios.get("https://api.bybit.com/v2/public/symbols");
+    const { data } = await axios.get("https://api.bybit.com/v2/public/tickers");
 
     data.result.forEach((element: any) => {
-      if(!element.name.endsWith("USDT")){
-        this.tickers.push(element.name);
-        this.send(JSON.stringify({ op: "subscribe", args: [`trade.${element.name}`] }))
-        this.send(
-            //JSON.stringify({ op: "subscribe", args: [`trade.${element.name}`] })
-            JSON.stringify({ op: "subscribe", args: [`orderBook_200.100ms.${element.name}`] })
-            //JSON.stringify({ op: "subscribe", args: [`klineV2.${interval}.${ticker}`] })
-
-            // subs only to inverse atm
-            //'{"op": "subscribe", "args": ["trade.BTCUSDT"]}'
-            // JSON.stringify({ op: "subscribe", args: [`instrument_info.100ms.${ticker}`] })
-                    
-        )
+      if (element.volume_24h > 20000000)
+      {
+        if(!element.symbol.endsWith("USDT")){
+          this.tickers.push(element.symbol);
+          this.send(JSON.stringify({ op: "subscribe", args: [`trade.${element.symbol}`, `orderBook_200.100ms.${element.symbol}`] }))
+        }
       }
     });
+    console.log(this.tickers)
   }
   // LIMIT IS 200, SO MAKE SURE TO ONLY QUERY 200 BRUV
   public async historicalKline(from: Number, ticker: any, interval: any) {
@@ -216,6 +212,18 @@ export class Bybit extends BaseExchange {
       //                    60, 120, 240, 360, D, W, M
       case "klineV2.1.": {
         this.KlineV2Handler(data, ticker);
+        break;
+      }
+
+      case "liquidation.": {
+        const liq: LiquidationEntity = {
+          price: parseFloat(data.data.price),
+          ticker: data.data.symbol,
+          side:data.data.side.toLowerCase(),
+          timestamp:data.data.time,
+          size: parseFloat(data.data.qty)
+        }
+        this.liquidation(liq);
         break;
       }
 

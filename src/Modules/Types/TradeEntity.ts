@@ -3,4 +3,5 @@ export type TradeEntity = {
   ticker: string;
   size: number;
   price: number;
+  side: string;
 };
