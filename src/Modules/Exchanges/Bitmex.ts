@@ -7,7 +7,7 @@ import axios from "axios";
 export class Bitmex extends BaseExchange {
 
   constructor() {
-    super(ExchangeType.WebSocket, "wss://www.bitmex.com/realtime", true);
+    super(ExchangeType.WebSocket, "wss://www.bitmex.com/realtime", true, 'ping', 3000, true);
   }
   subscribe(tickers: any) {
     /*

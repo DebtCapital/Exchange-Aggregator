@@ -9,7 +9,10 @@ export class Binance extends BaseExchange {
     super(
       ExchangeType.WebSocket,
       "wss://stream.binance.com:9443/ws/stream",
-      true
+      true, 
+      "",
+      0,
+      false
     );
   }
   subscribe(streams: Array<string>) {
@@ -24,14 +27,22 @@ export class Binance extends BaseExchange {
       params: streams,
       id: 1,
     };
+    // console.log(JSON.stringify(message))
     this.send(JSON.stringify(message));
+    // console.log(JSON.stringify(message))
   }
   async onConnected() {
     const { data } = await axios.get(
       "https://www.binance.com/api/v3/ticker/24hr"
     );
-    this.tickers = data.map((pair: any) => pair.symbol);
-    const pairs = data.map((pair: any) => `${pair.symbol.toLowerCase()}@trade`);;
+    this.tickers = data.sort((a: any, b: any) => {
+      if (parseFloat(a.quoteVolume) > parseFloat(b.quoteVolume)) {return -1} else {1}
+    }).filter((a:any) => a.quoteVolume > 20000000).map((pair: any) => pair.symbol).filter((a: any) =>{ 
+      return !a.toLowerCase().endsWith("btc") && !a.toLowerCase().endsWith("bidr")  && !a.toLowerCase().endsWith("idrt") && !a.toLowerCase().endsWith("uah") && !a.toLowerCase().endsWith("eur") && !a.toLowerCase().endsWith("try")&& !a.toLowerCase().endsWith("brl") && !a.toLowerCase().endsWith("rub")&& !a.toLowerCase().endsWith("eth") && !a.toLowerCase().endsWith("bnb") && !a.toLowerCase().endsWith("pax")
+  
+  });
+    // console.log(this.tickers)
+    const pairs = this.tickers.map((pair: any) => `${pair.toLowerCase()}@aggTrade`);;
     const first = pairs.slice(0, 500);
     // const second = pairs.slice(500, 1000);
     this.subscribe(first);
@@ -39,8 +50,9 @@ export class Binance extends BaseExchange {
 
   }
   onMessage(message: any) {
+    // console.log(message)
     switch (message.e) {
-      case "trade": {
+      case "aggTrade": {
         const trade: TradeEntity = {
           timestamp: message.T,
           price: message.p,

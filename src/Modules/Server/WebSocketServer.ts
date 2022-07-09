@@ -87,7 +87,7 @@ export class WebSocketServer {
       channel,
       data,
     });
-    this.logger.log(`User: ${ID} subscribed to channel: ${channel}`);
+    this.logger.log(`User: ${ID} subscribed to channel: ${channel} ${JSON.stringify(data)}`);
   }
   query(ID: string, payload: WebSocketMessage) {
     const result = Exchanges.searchTickers(

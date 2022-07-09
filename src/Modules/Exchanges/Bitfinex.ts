@@ -11,7 +11,7 @@ export class Bitfinex extends BaseExchange {
   private channelToTicker: any = {};
   constructor() {
     // public api
-    super(ExchangeType.WebSocket, "wss://api-pub.bitfinex.com/ws/2", true);
+    super(ExchangeType.WebSocket, "wss://api-pub.bitfinex.com/ws/2", true, "", 0, false);
   }
   subscribe(nigs:Array<any>) {
     nigs.forEach(element => {
@@ -139,6 +139,7 @@ export class Bitfinex extends BaseExchange {
       ];
       return;
     }
+    // console.log(message[0], this.channelToTicker)
     switch (this.channelToTicker[message[0]][2]) {
       case "trades": {
         this.tradeHandler(message);

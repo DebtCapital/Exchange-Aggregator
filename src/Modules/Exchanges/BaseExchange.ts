@@ -22,8 +22,6 @@ export abstract class BaseExchange {
 
   // {"op": "subscribe", "args": ["orderBookL2_200"]} <- bybit
   public last_update = new Date().getTime();
-  public last_ping = 0;
-  public last_ping_response = 0;
   private connection;
   public tickers: Array<string> = [];
   public orderbook: Record<string, OrderBook> = {};
@@ -35,11 +33,17 @@ export abstract class BaseExchange {
   constructor(
     private type: ExchangeType,
     private url: string,
-    public tick: boolean
+    public tick: boolean,
+    private heartbeatPingMessage: string | (() => void),
+    private heartbeatInterval: number,
+    private heartbeat: boolean
   ) {
     this.logger.log("Initializing...");
     if (this.type === ExchangeType.WebSocket) {
-      this.connection = new ReconnectingWebSocket({url});
+      if (url == "npm") {
+        return;
+      }
+      this.connection = new ReconnectingWebSocket({url, heartbeatPingMessage, heartbeatInterval, heartbeat});
       this.connection.on(WSEventName.OPENED, this._onConnected)
       this.connection.on(WSEventName.MESSAGE, this._onMessage);
       this.connection.on(WSEventName.CLOSED, this._onDisconnect);

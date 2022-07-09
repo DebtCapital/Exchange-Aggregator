@@ -13,7 +13,7 @@ export class Bybit extends BaseExchange {
   private last_dat = {};
   private futs: any = {};
   constructor() {
-    super(ExchangeType.WebSocket, "wss://stream.bybit.com/realtime", true);
+    super(ExchangeType.WebSocket, "wss://stream.bybit.com/realtime", true, '{"op":"ping"}', 3000, true);
   }
   /*
   export type TradeEntity = {

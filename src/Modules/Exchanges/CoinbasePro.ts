@@ -6,7 +6,7 @@ import axios from "axios";
 
 export class CoinbasePro extends BaseExchange {
   constructor() {
-    super(ExchangeType.WebSocket, "wss://ws-feed.pro.coinbase.com", true);
+    super(ExchangeType.WebSocket, "wss://ws-feed.pro.coinbase.com", true, "", 0, false);
   }
   subscribe() {
     /*
