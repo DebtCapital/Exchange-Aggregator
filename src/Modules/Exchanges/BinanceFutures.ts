@@ -4,11 +4,11 @@ import { TradeEntity } from "../Types/TradeEntity";
 import { BaseExchange } from "./BaseExchange";
 import axios from "axios";
 
-export class Binance extends BaseExchange {
+export class BinanceFutures extends BaseExchange {
   constructor() {
     super(
       ExchangeType.WebSocket,
-      "wss://stream.binance.com:9443/stream",
+      "wss://fstream.binance.com/ws",
       true, 
       "",
       0,
@@ -33,7 +33,7 @@ export class Binance extends BaseExchange {
   }
   async onConnected() {
     const { data } = await axios.get(
-      "https://www.binance.com/api/v3/ticker/24hr"
+      "https://fapi.binance.com/fapi/v1/ticker/24hr"
     );
     this.tickers = data.sort((a: any, b: any) => {
       if (parseFloat(a.quoteVolume) > parseFloat(b.quoteVolume)) {return -1} else {1}

@@ -4,6 +4,7 @@ import { Bitfinex } from "./Bitfinex";
 import { Bitmex } from "./Bitmex";
 import { Bybit } from "./Bybit";
 import { CoinbasePro } from "./CoinbasePro";
+import { BinanceFutures } from "./BinanceFutures";
 import { BybitUSDT } from "./BybitUSDT";
 
 class ExchangesAggregator {
@@ -32,4 +33,4 @@ class ExchangesAggregator {
   }
 }
 const Exchanges = new ExchangesAggregator();
-export { Binance, Bitfinex, Bitmex, Bybit, CoinbasePro, BybitUSDT, Exchanges };
+export { Binance, Bitfinex, Bitmex, Bybit, CoinbasePro, BybitUSDT, BinanceFutures, Exchanges };
