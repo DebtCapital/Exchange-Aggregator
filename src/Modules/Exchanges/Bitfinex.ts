@@ -157,7 +157,7 @@ export class Bitfinex extends BaseExchange {
       return;
     }
     // console.log(message[0], this.channelToTicker)
-    console.log(this.channelToTicker, message[0])
+    // console.log(this.channelToTicker, message[0])
     switch (this.channelToTicker[message[0]][2]) {
       case "trades": {
         this.tradeHandler(message);

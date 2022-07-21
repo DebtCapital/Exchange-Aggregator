@@ -27,7 +27,6 @@ export abstract class BaseExchange {
   public tickers: Array<string> = [];
   public orderbook: Record<string, OrderBook> = {};
   public ohlcv: Array<OHLCVEntity> = [];
-  public trades: Array<TradeEntity> = [];
   public liquidations: Array<LiquidationEntity> = [];
 
   private last_disconnect: number = Date.now();
@@ -146,15 +145,16 @@ export abstract class BaseExchange {
     }
   }
   addTransaction(trade: TradeEntity) {
-    this.trades.push(trade);
     WebSocketServer.broadcast(
       WebSocketChannels.TRADES,
       trade,
       (sub: any) => {
-        return sub.pair === trade.ticker;
+        return (sub.pair === trade.ticker && sub.exchange.toUpperCase() === this.exchangeName.toUpperCase()) ;
       },
       this.exchangeName
     );
+    WebSocketServer.save_trade(this.exchangeName.toUpperCase(),trade.ticker.toUpperCase() ,trade);
+
     this.ohlcvLedger.addTrade(trade);
     this.checkReset();
   }

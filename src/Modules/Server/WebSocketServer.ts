@@ -10,12 +10,15 @@ import {
   WebSocketPayload,
   WebSocketSubscription,
   WebSocketMessage,
+  TradeEntity,
 } from "../Types";
 export class WebSocketServer {
   private static wss: WebSocket.Server;
+  private trades: {[id: string] : Array<TradeEntity>};
   private logger = new Logger("WebSocket");
   private connections: Record<string, WebSocketConnection> = {};
   constructor() {
+    this.trades = {};
     const app = express();
     // initialize a simple http server
     const server = http.createServer(app);
@@ -61,6 +64,7 @@ export class WebSocketServer {
         this.query(ID, payload);
         break;
       default:
+        console.log("invalid", payload.data)
         this.sendToConnection(ID, { error: "Invalid message" });
         break;
     }
@@ -81,12 +85,35 @@ export class WebSocketServer {
       }
     }
   }
+
+  save_trade(exchange: String, symbol:String, trade: TradeEntity) {
+    // console.log(this.trades)
+    const key = exchange+":"+symbol;
+    if (!(key in this.trades)) {
+      this.trades[key] = [];
+    }
+    const last_trade = this.trades[key].slice(-1);
+    if (!(last_trade[0] === undefined)) {
+      if (new Date(last_trade[0].timestamp).getUTCDay() != new Date(trade.timestamp).getUTCDay()) {
+        this.trades[key] = [];
+      }
+    }
+    this.trades[key].push(trade);
+  }
   subscribe(ID: string, payload: WebSocketMessage) {
     const { channel, data } = payload;
     this.connections[ID].list.push({
       channel,
       data,
     });
+
+    if (channel == "TRADES") {
+      const key = data.exchange.toUpperCase()+":"+data.pair.toUpperCase();
+      if (!(key in this.trades)) {
+        this.trades[key] = [];
+      }
+      this.send(ID, channel, {trades: this.trades[key]}, data.exchange.toUpperCase());
+    }
     this.logger.log(`User: ${ID} subscribed to channel: ${channel} ${JSON.stringify(data)}`);
   }
   query(ID: string, payload: WebSocketMessage) {
