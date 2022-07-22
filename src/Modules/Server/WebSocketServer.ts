@@ -44,12 +44,17 @@ export class WebSocketServer {
     delete this.connections[ID];
   }
   onMessage(ID: string, data: WebSocket.Data) {
-    const payload = JSON.parse(data.toString());
-    if (Array.isArray(payload)) {
-      for (const data of payload) this.commandHandler(ID, data);
-    } else {
-      this.commandHandler(ID, payload);
+    try {
+      const payload = JSON.parse(data.toString());
+      if (Array.isArray(payload)) {
+        for (const data of payload) this.commandHandler(ID, data);
+      } else {
+        this.commandHandler(ID, payload);
+      }
+    } catch(err) {
+      console.log("incorrect message", err)
     }
+
   }
 
   commandHandler(ID: string, payload: WebSocketMessage) {
@@ -88,14 +93,22 @@ export class WebSocketServer {
 
   save_trade(exchange: String, symbol:String, trade: TradeEntity) {
     // console.log(this.trades)
-    const key = exchange+":"+symbol;
+    const key = exchange.toUpperCase()+":"+symbol.toUpperCase();
+
     if (!(key in this.trades)) {
+      
+      console.log("resetting1");
+      console.log(key, JSON.stringify(Object.keys(this.trades))) 
+
       this.trades[key] = [];
     }
     const last_trade = this.trades[key].slice(-1);
     if (!(last_trade[0] === undefined)) {
-      if (new Date(last_trade[0].timestamp).getUTCDay() != new Date(trade.timestamp).getUTCDay()) {
+      const d1 = new Date(last_trade[0].timestamp/1000).getUTCDay();
+      const d2 = new Date(trade.timestamp/1000).getUTCDay()
+      if (d1 != d2) {
         this.trades[key] = [];
+        console.log("resetting", last_trade[0].timestamp, trade.timestamp, d1, d2)
       }
     }
     this.trades[key].push(trade);

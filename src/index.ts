@@ -12,4 +12,4 @@ import {
 import { Server } from "./Modules/Server";
 const WebSocketServer = Server;
 
-Exchanges.start([CoinbasePro, BinanceFutures, Binance, Bitmex, Bybit, Bitfinex, BybitUSDT]);
+Exchanges.start([BinanceFutures, Binance, Bitmex, Bybit, BybitUSDT]);
